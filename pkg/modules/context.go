@@ -112,19 +112,20 @@ func NewUserOpHandlerContext(
 		return nil, err
 	}
 
+	// TODO : We'll need this later when we utilize the entrypoint's staking functionality.
 	// Fetch the current entrypoint deposits by entity
-	sd, err := gs(entryPoint, op.Sender)
-	if err != nil {
-		return nil, err
-	}
-	fd, err := gs(entryPoint, op.GetFactory())
-	if err != nil {
-		return nil, err
-	}
-	pd, err := gs(entryPoint, op.GetPaymaster())
-	if err != nil {
-		return nil, err
-	}
+	//sd, err := gs(entryPoint, op.Sender)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//fd, err := gs(entryPoint, op.GetFactory())
+	//if err != nil {
+	//	return nil, err
+	//}
+	//pd, err := gs(entryPoint, op.GetPaymaster())
+	//if err != nil {
+	//	return nil, err
+	//}
 
 	return &UserOpHandlerCtx{
 		UserOp:              op,
@@ -133,9 +134,9 @@ func NewUserOpHandlerContext(
 		pendingSenderOps:    pso,
 		pendingFactoryOps:   pfo,
 		pendingPaymasterOps: ppo,
-		senderDeposit:       sd,
-		factoryDeposit:      fd,
-		paymasterDeposit:    pd,
+		//senderDeposit:    sd,
+		//factoryDeposit:   fd,
+		//paymasterDeposit: pd,
 	}, nil
 }
 

@@ -120,7 +120,7 @@ func Rip7560Mode() {
 
 	exp := expire.New(conf.MaxOpTTL)
 
-	relayer := relay.New(eoa, eth, chain, beneficiary, logr)
+	relayer := relay.New(eoa, eth, chain, rpc, beneficiary, logr)
 
 	rep := entities.New(db, eth, conf.ReputationConstants)
 
@@ -142,9 +142,9 @@ func Rip7560Mode() {
 	c.UseLogger(logr)
 	c.UseModules(
 		rep.CheckStatus(),
-		rep.ValidateOpLimit(),
+		//rep.ValidateOpLimit(),
 		check.ValidateOpValues(),
-		check.SimulateOp(),
+		//check.SimulateOp(),
 		rep.IncOpsSeen(),
 	)
 
@@ -158,20 +158,25 @@ func Rip7560Mode() {
 		log.Fatal(err)
 	}
 	b.UseModules(
+		//TODO :
 		exp.DropExpired(),
 		gasprice.SortByGasPrice(),
 		gasprice.FilterUnderpriced(),
 		batch.SortByNonce(),
 		batch.MaintainGasLimit(conf.MaxBatchGasLimit),
-		check.CodeHashes(),
-		check.PaymasterDeposit(),
+		//check.CodeHashes(),
+		//check.PaymasterDeposit(),
 		check.SimulateBatch(),
-		relayer.SendUserOperation(),
+		//relayer.SendUserOperation(),
+		relayer.SendUserOperationRip7560(),
 		rep.IncOpsIncluded(),
 		check.Clean(),
 	)
-	if err := b.Run(); err != nil {
-		log.Fatal(err)
+
+	if !conf.DebugMode {
+		if err := b.Run(); err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	// init Debug

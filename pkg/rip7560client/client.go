@@ -120,11 +120,14 @@ func (i *Client) SendUserOperation(op map[string]any, ep string) (string, error)
 	l := i.logger.WithName("eth_sendUserOperation")
 
 	// Check EntryPoint and userOp is valid.
-	epAddr, err := i.parseEntryPointAddress(ep)
-	if err != nil {
-		l.Error(err, "eth_sendUserOperation error")
-		return "", err
-	}
+	// [RIP-7560] not use entrypoint
+	//epAddr, err := i.parseEntryPointAddress(ep)
+	//if err != nil {
+	//	l.Error(err, "eth_sendUserOperation error")
+	//	return "", err
+	//}
+	epAddr := common.Address{}
+
 	l = l.
 		WithValues("entrypoint", epAddr.String()).
 		WithValues("chain_id", i.chainID.String())

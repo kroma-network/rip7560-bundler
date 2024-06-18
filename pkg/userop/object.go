@@ -41,17 +41,19 @@ var (
 
 // UserOperation represents an EIP-4337 style transaction for a smart contract account.
 type UserOperation struct {
-	Sender               common.Address `json:"sender"               mapstructure:"sender"               validate:"required"`
-	Nonce                *big.Int       `json:"nonce"                mapstructure:"nonce"                validate:"required"`
-	InitCode             []byte         `json:"initCode"             mapstructure:"initCode"             validate:"required"`
-	CallData             []byte         `json:"callData"             mapstructure:"callData"             validate:"required"`
-	CallGasLimit         *big.Int       `json:"callGasLimit"         mapstructure:"callGasLimit"         validate:"required"`
-	VerificationGasLimit *big.Int       `json:"verificationGasLimit" mapstructure:"verificationGasLimit" validate:"required"`
-	PreVerificationGas   *big.Int       `json:"preVerificationGas"   mapstructure:"preVerificationGas"   validate:"required"`
-	MaxFeePerGas         *big.Int       `json:"maxFeePerGas"         mapstructure:"maxFeePerGas"         validate:"required"`
-	MaxPriorityFeePerGas *big.Int       `json:"maxPriorityFeePerGas" mapstructure:"maxPriorityFeePerGas" validate:"required"`
-	PaymasterAndData     []byte         `json:"paymasterAndData"     mapstructure:"paymasterAndData"     validate:"required"`
-	Signature            []byte         `json:"signature"            mapstructure:"signature"            validate:"required"`
+	Sender                        common.Address `json:"sender"               mapstructure:"sender"               validate:"required"`
+	Nonce                         *big.Int       `json:"nonce"                mapstructure:"nonce"                validate:"required"`
+	InitCode                      []byte         `json:"initCode"             mapstructure:"initCode"             ` // [RIP-7560] Not required after the initial request
+	CallData                      []byte         `json:"callData"             mapstructure:"callData"             validate:"required"`
+	CallGasLimit                  *big.Int       `json:"callGasLimit"         mapstructure:"callGasLimit"         validate:"required"`
+	VerificationGasLimit          *big.Int       `json:"verificationGasLimit" mapstructure:"verificationGasLimit" validate:"required"`
+	PreVerificationGas            *big.Int       `json:"preVerificationGas"   mapstructure:"preVerificationGas"   validate:"required"`
+	MaxFeePerGas                  *big.Int       `json:"maxFeePerGas"         mapstructure:"maxFeePerGas"         validate:"required"`
+	MaxPriorityFeePerGas          *big.Int       `json:"maxPriorityFeePerGas" mapstructure:"maxPriorityFeePerGas" validate:"required"`
+	PaymasterAndData              []byte         `json:"paymasterAndData"     mapstructure:"paymasterAndData"     validate:"required"`
+	Signature                     []byte         `json:"signature"            mapstructure:"signature"            validate:"required"`
+	PaymasterVerificationGasLimit *big.Int       `json:"paymasterVerificationGasLimit"   mapstructure:"paymasterVerificationGasLimit"   validate:"required"` // [RIP-7560] required
+	PaymasterPostOpGasLimit       *big.Int       `json:"paymasterPostOpGasLimit"   mapstructure:"paymasterPostOpGasLimit"   validate:"required"`             // [RIP-7560] required
 }
 
 // GetPaymaster returns the address portion of PaymasterAndData if applicable. Otherwise it returns the zero
@@ -168,6 +170,8 @@ func (op *UserOperation) PackForSignature() []byte {
 		{Name: "maxFeePerGas", Type: uint256},
 		{Name: "maxPriorityFeePerGas", Type: uint256},
 		{Name: "hashPaymasterAndData", Type: bytes32},
+		{Name: "paymasterVerificationGasLimit", Type: uint256},
+		{Name: "paymasterPostOpGasLimit", Type: uint256},
 	}
 	packed, _ := args.Pack(
 		op.Sender,
@@ -180,6 +184,8 @@ func (op *UserOperation) PackForSignature() []byte {
 		op.MaxFeePerGas,
 		op.MaxPriorityFeePerGas,
 		crypto.Keccak256Hash(op.PaymasterAndData),
+		op.PaymasterVerificationGasLimit,
+		op.PaymasterPostOpGasLimit,
 	)
 
 	return packed
@@ -203,29 +209,33 @@ func (op *UserOperation) MarshalJSON() ([]byte, error) {
 	}
 
 	return json.Marshal(&struct {
-		Sender               string `json:"sender"`
-		Nonce                string `json:"nonce"`
-		InitCode             string `json:"initCode"`
-		CallData             string `json:"callData"`
-		CallGasLimit         string `json:"callGasLimit"`
-		VerificationGasLimit string `json:"verificationGasLimit"`
-		PreVerificationGas   string `json:"preVerificationGas"`
-		MaxFeePerGas         string `json:"maxFeePerGas"`
-		MaxPriorityFeePerGas string `json:"maxPriorityFeePerGas"`
-		PaymasterAndData     string `json:"paymasterAndData"`
-		Signature            string `json:"signature"`
+		Sender                        string `json:"sender"`
+		Nonce                         string `json:"nonce"`
+		InitCode                      string `json:"initCode"`
+		CallData                      string `json:"callData"`
+		CallGasLimit                  string `json:"callGasLimit"`
+		VerificationGasLimit          string `json:"verificationGasLimit"`
+		PreVerificationGas            string `json:"preVerificationGas"`
+		MaxFeePerGas                  string `json:"maxFeePerGas"`
+		MaxPriorityFeePerGas          string `json:"maxPriorityFeePerGas"`
+		PaymasterAndData              string `json:"paymasterAndData"`
+		Signature                     string `json:"signature"`
+		PaymasterVerificationGasLimit string `json:"paymasterVerificationGasLimit"`
+		PaymasterPostOpGasLimit       string `json:"paymasterPostOpGasLimit"`
 	}{
-		Sender:               op.Sender.String(),
-		Nonce:                hexutil.EncodeBig(op.Nonce),
-		InitCode:             ic,
-		CallData:             hexutil.Encode(op.CallData),
-		CallGasLimit:         hexutil.EncodeBig(op.CallGasLimit),
-		VerificationGasLimit: hexutil.EncodeBig(op.VerificationGasLimit),
-		PreVerificationGas:   hexutil.EncodeBig(op.PreVerificationGas),
-		MaxFeePerGas:         hexutil.EncodeBig(op.MaxFeePerGas),
-		MaxPriorityFeePerGas: hexutil.EncodeBig(op.MaxPriorityFeePerGas),
-		PaymasterAndData:     hexutil.Encode(op.PaymasterAndData),
-		Signature:            hexutil.Encode(op.Signature),
+		Sender:                        op.Sender.String(),
+		Nonce:                         hexutil.EncodeBig(op.Nonce),
+		InitCode:                      ic,
+		CallData:                      hexutil.Encode(op.CallData),
+		CallGasLimit:                  hexutil.EncodeBig(op.CallGasLimit),
+		VerificationGasLimit:          hexutil.EncodeBig(op.VerificationGasLimit),
+		PreVerificationGas:            hexutil.EncodeBig(op.PreVerificationGas),
+		MaxFeePerGas:                  hexutil.EncodeBig(op.MaxFeePerGas),
+		MaxPriorityFeePerGas:          hexutil.EncodeBig(op.MaxPriorityFeePerGas),
+		PaymasterAndData:              hexutil.Encode(op.PaymasterAndData),
+		Signature:                     hexutil.Encode(op.Signature),
+		PaymasterVerificationGasLimit: hexutil.EncodeBig(op.PaymasterVerificationGasLimit),
+		PaymasterPostOpGasLimit:       hexutil.EncodeBig(op.PaymasterPostOpGasLimit),
 	})
 }
 

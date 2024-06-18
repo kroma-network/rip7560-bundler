@@ -35,9 +35,10 @@ func ValidatePaymasterAndData(
 		return errors.New("paymaster: code not deployed")
 	}
 
-	if dep.Deposit.Cmp(op.GetMaxPrefund()) < 0 {
-		return errors.New("paymaster: not enough deposit to cover max prefund")
-	}
+	// [RIP-7560]
+	//if dep.Deposit.Cmp(op.GetMaxPrefund()) < 0 {
+	//	return errors.New("paymaster: not enough deposit to cover max prefund")
+	//}
 
 	return nil
 }

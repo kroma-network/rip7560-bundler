@@ -8,10 +8,13 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/go-logr/logr"
 	"github.com/stackup-wallet/stackup-bundler/pkg/entrypoint/transaction"
 	"github.com/stackup-wallet/stackup-bundler/pkg/modules"
+	"github.com/stackup-wallet/stackup-bundler/pkg/rip7560client"
 	"github.com/stackup-wallet/stackup-bundler/pkg/signer"
+	"github.com/stackup-wallet/stackup-bundler/pkg/userop"
 )
 
 // Relayer provides a module that can relay batches with a regular EOA. Relaying batches to the EntryPoint
@@ -27,6 +30,7 @@ type Relayer struct {
 	eoa         *signer.EOA
 	eth         *ethclient.Client
 	chainID     *big.Int
+	rpc         *rpc.Client
 	beneficiary common.Address
 	logger      logr.Logger
 	waitTimeout time.Duration
@@ -37,6 +41,7 @@ func New(
 	eoa *signer.EOA,
 	eth *ethclient.Client,
 	chainID *big.Int,
+	rpc *rpc.Client,
 	beneficiary common.Address,
 	l logr.Logger,
 ) *Relayer {
@@ -44,6 +49,7 @@ func New(
 		eoa:         eoa,
 		eth:         eth,
 		chainID:     chainID,
+		rpc:         rpc,
 		beneficiary: beneficiary,
 		logger:      l.WithName("relayer"),
 		waitTimeout: DefaultWaitTimeout,
@@ -57,6 +63,35 @@ func New(
 // The default value is 30 seconds. Setting the value to 0 will skip waiting for a transaction to be included.
 func (r *Relayer) SetWaitTimeout(timeout time.Duration) {
 	r.waitTimeout = timeout
+}
+
+func (r *Relayer) SendUserOperationRip7560() modules.BatchHandlerFunc {
+	// [RIP-7560] hard-coded bundler config
+	creationBlock := new(big.Int).SetUint64(0)
+	expectedRevenue := new(big.Int).SetUint64(0)
+	bundlerId := "1"
+	return func(ctx *modules.BatchHandlerCtx) error {
+		transactionArgs := r.buildTransactionArgs(ctx.Batch)
+		return r.sendTransactionBundle(transactionArgs, creationBlock, expectedRevenue, bundlerId)
+	}
+}
+
+func (r *Relayer) buildTransactionArgs(batch []*userop.UserOperation) []rip7560client.UserOperationArgs {
+	var transactionArgs []rip7560client.UserOperationArgs
+	for _, userOp := range batch {
+		txArgs := rip7560client.CreateUserOperationArgs(userOp)
+		transactionArgs = append(transactionArgs, txArgs)
+	}
+	return transactionArgs
+}
+
+func (r *Relayer) sendTransactionBundle(transactionArgs []rip7560client.UserOperationArgs, creationBlock, expectedRevenue *big.Int, bundlerId string) error {
+	var out any
+	if err := r.rpc.Call(&out, "eth_sendRip7560TransactionsBundle", &transactionArgs, creationBlock, expectedRevenue, bundlerId); err != nil {
+		return err
+	}
+	r.logger.Info("eth_sendRip7560TransactionsBundle", out)
+	return nil
 }
 
 // SendUserOperation returns a BatchHandler that is used by the Bundler to send batches in a regular EOA

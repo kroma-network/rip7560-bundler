@@ -120,7 +120,7 @@ func PrivateMode() {
 
 	exp := expire.New(conf.MaxOpTTL)
 
-	relayer := relay.New(eoa, eth, chain, beneficiary, logr)
+	relayer := relay.New(eoa, eth, chain, rpc, beneficiary, logr)
 
 	rep := entities.New(db, eth, conf.ReputationConstants)
 
