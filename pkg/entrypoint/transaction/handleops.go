@@ -42,9 +42,9 @@ type Opts struct {
 
 func toAbiType(batch []*userop.UserOperation) []entrypoint.UserOperation {
 	ops := []entrypoint.UserOperation{}
-	for _, op := range batch {
-		ops = append(ops, entrypoint.UserOperation(*op))
-	}
+	//for _, op := range batch {
+	//	ops = append(ops, entrypoint.UserOperation(*op))
+	//}
 
 	return ops
 }

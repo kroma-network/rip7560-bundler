@@ -1,7 +1,6 @@
 package simulation
 
 import (
-	stdError "errors"
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -20,17 +19,17 @@ func SimulateValidation(
 	entryPoint common.Address,
 	op *userop.UserOperation,
 ) (*reverts.ValidationResultRevert, error) {
-	ep, err := entrypoint.NewEntrypoint(entryPoint, ethclient.NewClient(rpc))
+	_, err := entrypoint.NewEntrypoint(entryPoint, ethclient.NewClient(rpc))
 	if err != nil {
 		return nil, err
 	}
 
-	var res []interface{}
-	rawCaller := &entrypoint.EntrypointRaw{Contract: ep}
-	err = rawCaller.Call(nil, &res, "simulateValidation", entrypoint.UserOperation(*op))
-	if err == nil {
-		return nil, stdError.New("unexpected result from simulateValidation")
-	}
+	//var res []interface{}
+	//rawCaller := &entrypoint.EntrypointRaw{Contract: ep}
+	//err = rawCaller.Call(nil, &res, "simulateValidation", entrypoint.UserOperation(*op))
+	//if err == nil {
+	//	return nil, stdError.New("unexpected result from simulateValidation")
+	//}
 
 	sim, simErr := reverts.NewValidationResult(err)
 	if simErr != nil {

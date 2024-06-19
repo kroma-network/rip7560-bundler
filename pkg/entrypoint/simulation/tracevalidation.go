@@ -41,7 +41,7 @@ type TraceOutput struct {
 // TraceSimulateValidation makes a debug_traceCall to Entrypoint.simulateValidation(userop) and returns
 // information related to the validation phase of a UserOperation.
 func TraceSimulateValidation(in *TraceInput) (*TraceOutput, error) {
-	ep, err := entrypoint.NewEntrypoint(in.EntryPoint, ethclient.NewClient(in.Rpc))
+	_, err := entrypoint.NewEntrypoint(in.EntryPoint, ethclient.NewClient(in.Rpc))
 	if err != nil {
 		return nil, err
 	}
@@ -51,10 +51,10 @@ func TraceSimulateValidation(in *TraceInput) (*TraceOutput, error) {
 	}
 	auth.GasLimit = math.MaxUint64
 	auth.NoSend = true
-	tx, err := ep.SimulateValidation(auth, entrypoint.UserOperation(*in.Op))
-	if err != nil {
-		return nil, err
-	}
+	//tx, err := ep.SimulateValidation(auth, entrypoint.UserOperation(*in.Op))
+	//if err != nil {
+	//	return nil, err
+	//}
 	t := tracer.Loaded.BundlerCollectorTracer
 	if in.Tracer != "" {
 		t = in.Tracer
@@ -64,7 +64,7 @@ func TraceSimulateValidation(in *TraceInput) (*TraceOutput, error) {
 	req := utils.TraceCallReq{
 		From:         common.HexToAddress("0x"),
 		To:           in.EntryPoint,
-		Data:         tx.Data(),
+		Data:         nil, //tx.Data(),
 		MaxFeePerGas: hexutil.Big(*in.Op.MaxFeePerGas),
 	}
 	opts := utils.TraceCallOpts{

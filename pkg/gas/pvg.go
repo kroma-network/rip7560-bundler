@@ -12,7 +12,6 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/stackup-wallet/stackup-bundler/pkg/arbitrum/nodeinterface"
-	"github.com/stackup-wallet/stackup-bundler/pkg/entrypoint"
 	"github.com/stackup-wallet/stackup-bundler/pkg/entrypoint/methods"
 	"github.com/stackup-wallet/stackup-bundler/pkg/entrypoint/transaction"
 	"github.com/stackup-wallet/stackup-bundler/pkg/optimism/gaspriceoracle"
@@ -55,7 +54,7 @@ func CalcArbitrumPVGWithEthClient(
 
 		// Pack handleOps method inputs
 		ho, err := methods.HandleOpsMethod.Inputs.Pack(
-			[]entrypoint.UserOperation{entrypoint.UserOperation(*tmp)},
+			//[]entrypoint.UserOperation{entrypoint.UserOperation(*tmp)},
 			dummy.Address,
 		)
 		if err != nil {

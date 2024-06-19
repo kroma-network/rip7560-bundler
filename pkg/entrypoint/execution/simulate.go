@@ -31,7 +31,7 @@ type SimulateInput struct {
 }
 
 func SimulateHandleOp(in *SimulateInput) (*reverts.ExecutionResultRevert, error) {
-	ep, err := entrypoint.NewEntrypoint(in.EntryPoint, ethclient.NewClient(in.Rpc))
+	_, err := entrypoint.NewEntrypoint(in.EntryPoint, ethclient.NewClient(in.Rpc))
 	if err != nil {
 		return nil, err
 	}
@@ -41,15 +41,15 @@ func SimulateHandleOp(in *SimulateInput) (*reverts.ExecutionResultRevert, error)
 	}
 	auth.GasLimit = math.MaxUint64
 	auth.NoSend = true
-	tx, err := ep.SimulateHandleOp(auth, entrypoint.UserOperation(*in.Op), in.Target, in.Data)
-	if err != nil {
-		return nil, err
-	}
+	//tx, err := ep.SimulateHandleOp(auth, entrypoint.UserOperation(*in.Op), in.Target, in.Data)
+	//if err != nil {
+	//	return nil, err
+	//}
 
 	req := utils.EthCallReq{
 		From: common.HexToAddress("0x"),
 		To:   in.EntryPoint,
-		Data: tx.Data(),
+		Data: nil, //tx.Data(),
 	}
 	err = in.Rpc.CallContext(context.Background(), nil, "eth_call", &req, "latest", in.Sos)
 

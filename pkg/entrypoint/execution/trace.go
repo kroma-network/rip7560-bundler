@@ -86,10 +86,10 @@ func TraceSimulateHandleOp(in *TraceInput) (*TraceOutput, error) {
 	if in.TraceFeeCap != nil {
 		mf = in.TraceFeeCap
 	}
-	tx, err := ep.SimulateHandleOp(auth, entrypoint.UserOperation(*in.Op), in.Target, in.Data)
-	if err != nil {
-		return nil, err
-	}
+	//tx, err := ep.SimulateHandleOp(auth, entrypoint.UserOperation(*in.Op), in.Target, in.Data)
+	//if err != nil {
+	//	return nil, err
+	//}
 	t := tracer.Loaded.BundlerExecutionTracer
 	if in.Tracer != "" {
 		t = in.Tracer
@@ -100,7 +100,7 @@ func TraceSimulateHandleOp(in *TraceInput) (*TraceOutput, error) {
 	req := utils.TraceCallReq{
 		From:         common.HexToAddress("0x"),
 		To:           in.EntryPoint,
-		Data:         tx.Data(),
+		Data:         nil, //tx.Data(),
 		MaxFeePerGas: hexutil.Big(*mf),
 	}
 	opts := utils.TraceCallOpts{

@@ -1,7 +1,6 @@
 package gasprice
 
 import (
-	"context"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -21,10 +20,12 @@ func NoopGetGasTipFunc() GetGasTipFunc {
 // GetGasTipWithEthClient returns a GetGasTipFunc using an eth client.
 func GetGasTipWithEthClient(eth *ethclient.Client) GetGasTipFunc {
 	return func() (*big.Int, error) {
-		gt, err := eth.SuggestGasTipCap(context.Background())
-		if err != nil {
-			return nil, err
-		}
-		return gt, nil
+		//gt, err := eth.SuggestGasTipCap(context.Background())
+		//if err != nil {
+		//	return nil, err
+		//}
+		//return gt, nil
+		tip := new(big.Int).SetUint64(1)
+		return tip, nil
 	}
 }
