@@ -1,6 +1,7 @@
 package simulation
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -9,6 +10,7 @@ import (
 	"github.com/stackup-wallet/stackup-bundler/pkg/entrypoint"
 	"github.com/stackup-wallet/stackup-bundler/pkg/entrypoint/reverts"
 	"github.com/stackup-wallet/stackup-bundler/pkg/errors"
+	"github.com/stackup-wallet/stackup-bundler/pkg/rip7560client"
 	"github.com/stackup-wallet/stackup-bundler/pkg/userop"
 )
 
@@ -41,4 +43,19 @@ func SimulateValidation(
 	}
 
 	return sim, nil
+}
+
+// SimulateRIP7560Validation makes a static call to eth_callRip7560Validation and returns the
+// results without any state changes.
+func SimulateRIP7560Validation(
+	rpc *rpc.Client,
+	op *userop.UserOperation,
+) (*reverts.ValidationPhaseResult, error) {
+	var res reverts.ValidationPhaseResult
+	req := rip7560client.CreateUserOperationArgs(op)
+	if err := rpc.CallContext(context.Background(), &res, "eth_callRip7560Validation", &req, "latest"); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
 }

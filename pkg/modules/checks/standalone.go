@@ -75,7 +75,7 @@ func (s *Standalone) ValidateOpValues() modules.UserOpHandlerFunc {
 		g := new(errgroup.Group)
 		g.Go(func() error { return ValidateSender(ctx.UserOp, gc) })
 		g.Go(func() error { return ValidateInitCode(ctx.UserOp) })
-		g.Go(func() error { return ValidateVerificationGas(ctx.UserOp, s.ov, s.maxVerificationGas) })
+		//g.Go(func() error { return ValidateVerificationGas(ctx.UserOp, s.ov, s.maxVerificationGas) })
 		g.Go(func() error { return ValidatePaymasterAndData(ctx.UserOp, ctx.GetPaymasterDepositInfo(), gc) })
 		g.Go(func() error { return ValidateCallGasLimit(ctx.UserOp, s.ov) })
 		g.Go(func() error { return ValidateFeePerGas(ctx.UserOp, gasprice.GetBaseFeeWithEthClient(s.eth)) })
@@ -119,6 +119,63 @@ func (s *Standalone) SimulateOp() modules.UserOpHandlerFunc {
 		})
 		g.Go(func() error {
 			out, err := simulation.TraceSimulateValidation(&simulation.TraceInput{
+				Rpc:                s.rpc,
+				EntryPoint:         ctx.EntryPoint,
+				AltMempools:        s.alt,
+				Op:                 ctx.UserOp,
+				ChainID:            ctx.ChainID,
+				IsRIP7212Supported: s.isRIP7212Supported,
+				Tracer:             s.tracer,
+				Stakes: simulation.EntityStakes{
+					ctx.UserOp.Sender:         ctx.GetSenderDepositInfo(),
+					ctx.UserOp.GetFactory():   ctx.GetFactoryDepositInfo(),
+					ctx.UserOp.GetPaymaster(): ctx.GetPaymasterDepositInfo(),
+				},
+			})
+			if err != nil {
+				return errors.NewRPCError(errors.BANNED_OPCODE, err.Error(), err.Error())
+			}
+
+			ch, err := getCodeHashes(out.TouchedContracts, gc)
+			if err != nil {
+				return errors.NewRPCError(errors.BANNED_OPCODE, err.Error(), err.Error())
+			}
+			return saveCodeHashes(s.db, ctx.UserOp.GetUserOpHash(ctx.EntryPoint, ctx.ChainID), ch)
+		})
+
+		return g.Wait()
+	}
+}
+
+func (s *Standalone) SimulateRIP7560Op() modules.UserOpHandlerFunc {
+	return func(ctx *modules.UserOpHandlerCtx) error {
+		gc := getCodeWithEthClient(s.eth)
+		g := new(errgroup.Group)
+		g.Go(func() error {
+			sim, err := simulation.SimulateRIP7560Validation(s.rpc, ctx.UserOp)
+
+			if err != nil {
+				return errors.NewRPCError(errors.REJECTED_BY_EP_OR_ACCOUNT, err.Error(), err.Error())
+			}
+			//if sim.ReturnInfo.SigFailed {
+			//	return errors.NewRPCError(
+			//		errors.INVALID_SIGNATURE,
+			//		"Invalid UserOp signature or paymaster signature",
+			//		nil,
+			//	)
+			//}
+			if sim.SenderValidUntil != 0 &&
+				uint64(time.Now().Unix()) >= sim.SenderValidUntil-30 {
+				return errors.NewRPCError(
+					errors.SHORT_DEADLINE,
+					"expires too soon",
+					nil,
+				)
+			}
+			return nil
+		})
+		g.Go(func() error {
+			out, err := simulation.TraceSimulateRIP7560Validation(&simulation.TraceInput{
 				Rpc:                s.rpc,
 				EntryPoint:         ctx.EntryPoint,
 				AltMempools:        s.alt,

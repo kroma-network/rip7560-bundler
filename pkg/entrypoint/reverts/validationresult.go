@@ -8,7 +8,9 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/holiman/uint256"
 )
 
 type ReturnInfo struct {
@@ -128,4 +130,21 @@ func NewValidationResult(err error) (*ValidationResultRevert, error) {
 		FactoryInfo:   factoryInfo,
 		PaymasterInfo: paymasterInfo,
 	}, nil
+}
+
+type ValidationPhaseResult struct {
+	TxIndex                int
+	Tx                     *types.Transaction
+	TxHash                 common.Hash
+	PaymasterContext       []byte
+	NonceValidationUsedGas uint64
+	DeploymentUsedGas      uint64
+	ValidationUsedGas      uint64
+	PmValidationUsedGas    uint64
+	SenderValidAfter       uint64
+	SenderValidUntil       uint64
+	PmValidAfter           uint64
+	PmValidUntil           uint64
+	Payment                *common.Address
+	PrepaidGas             *uint256.Int
 }

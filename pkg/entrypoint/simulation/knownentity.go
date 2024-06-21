@@ -2,7 +2,6 @@ package simulation
 
 import (
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/stackup-wallet/stackup-bundler/pkg/entrypoint/methods"
 	"github.com/stackup-wallet/stackup-bundler/pkg/tracer"
 	"github.com/stackup-wallet/stackup-bundler/pkg/userop"
 )
@@ -21,18 +20,18 @@ func newKnownEntity(
 	si := tracer.CallFromEntryPointInfo{}
 	fi := tracer.CallFromEntryPointInfo{}
 	pi := tracer.CallFromEntryPointInfo{}
-	for _, c := range res.CallsFromEntryPoint {
-		switch c.TopLevelTargetAddress {
-		case op.Sender:
-			si = c
-		case op.GetPaymaster():
-			pi = c
-		default:
-			if c.TopLevelMethodSig.String() == methods.CreateSenderSelector {
-				fi = c
-			}
-		}
-	}
+	//for _, c := range res.CallsFromEntryPoint {
+	//	switch c.TopLevelTargetAddress {
+	//	case op.Sender:
+	//		si = c
+	//	case op.GetPaymaster():
+	//		pi = c
+	//	default:
+	//		if c.TopLevelMethodSig.String() == methods.CreateSenderSelector {
+	//			fi = c
+	//		}
+	//	}
+	//}
 
 	return knownEntity{
 		"account": {

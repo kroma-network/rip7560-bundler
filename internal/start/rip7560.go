@@ -144,7 +144,7 @@ func Rip7560Mode() {
 		rep.CheckStatus(),
 		//rep.ValidateOpLimit(),
 		check.ValidateOpValues(),
-		//check.SimulateOp(),
+		check.SimulateRIP7560Op(),
 		rep.IncOpsSeen(),
 	)
 
