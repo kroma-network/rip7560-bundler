@@ -127,6 +127,7 @@ func Rip7560Mode() {
 	// Init Client
 	c := rip7560client.New(mem, ov, chain, conf.SupportedEntryPoints, conf.OpLookupLimit)
 	c.SetGetUserOpReceiptFunc(rip7560client.GetUserOpReceiptWithEthClient(eth))
+	c.SetGetRip7560UserOpReceiptFunc(rip7560client.GetRip7560UserOpReceiptWithEthClient(eth))
 	c.SetGetGasPricesFunc(rip7560client.GetGasPricesWithEthClient(eth))
 	c.SetGetGasEstimateFunc(
 		rip7560client.GetGasEstimateWithEthClient(

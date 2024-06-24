@@ -4,6 +4,7 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/stackup-wallet/stackup-bundler/pkg/entrypoint/filter"
@@ -16,9 +17,16 @@ import (
 // GetUserOpReceiptFunc is a general interface for fetching a UserOperationReceipt given a userOpHash,
 // EntryPoint address, and block range.
 type GetUserOpReceiptFunc = func(hash string, ep common.Address, blkRange uint64) (*filter.UserOperationReceipt, error)
+type GetRip7560UserOpReceiptFunc = func(txHash common.Hash, blkRange uint64) (*types.Receipt, error)
 
 func getUserOpReceiptNoop() GetUserOpReceiptFunc {
 	return func(hash string, ep common.Address, blkRange uint64) (*filter.UserOperationReceipt, error) {
+		return nil, nil
+	}
+}
+
+func getRip7560UserOpReceiptNoop() GetRip7560UserOpReceiptFunc {
+	return func(txHash common.Hash, blkRange uint64) (*types.Receipt, error) {
 		return nil, nil
 	}
 }
@@ -28,6 +36,14 @@ func getUserOpReceiptNoop() GetUserOpReceiptFunc {
 func GetUserOpReceiptWithEthClient(eth *ethclient.Client) GetUserOpReceiptFunc {
 	return func(hash string, ep common.Address, blkRange uint64) (*filter.UserOperationReceipt, error) {
 		return filter.GetUserOperationReceipt(eth, hash, ep, blkRange)
+	}
+}
+
+// GetRip7560UserOpReceiptWithEthClient returns an implementation of GetRip7560UserOpReceiptFunc that relies on an eth
+// client to fetch a UserOperationReceipt.
+func GetRip7560UserOpReceiptWithEthClient(eth *ethclient.Client) GetRip7560UserOpReceiptFunc {
+	return func(txHash common.Hash, blkRange uint64) (*types.Receipt, error) {
+		return filter.GetRip7560UserOperationReceipt(eth, txHash, blkRange)
 	}
 }
 
