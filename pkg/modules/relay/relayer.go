@@ -71,12 +71,12 @@ func (r *Relayer) SendUserOperationRip7560() modules.BatchHandlerFunc {
 	expectedRevenue := new(big.Int).SetUint64(0)
 	bundlerId := "1"
 	return func(ctx *modules.BatchHandlerCtx) error {
-		transactionArgs := r.buildTransactionArgs(ctx.Batch)
+		transactionArgs := r.BuildTransactionArgs(ctx.Batch)
 		return r.sendTransactionBundle(transactionArgs, creationBlock, expectedRevenue, bundlerId)
 	}
 }
 
-func (r *Relayer) buildTransactionArgs(batch []*userop.UserOperation) []rip7560client.UserOperationArgs {
+func (r *Relayer) BuildTransactionArgs(batch []*userop.UserOperation) []rip7560client.UserOperationArgs {
 	var transactionArgs []rip7560client.UserOperationArgs
 	for _, userOp := range batch {
 		txArgs := rip7560client.CreateUserOperationArgs(userOp)

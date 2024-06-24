@@ -2,6 +2,7 @@ package rip7560client
 
 import (
 	"errors"
+	"github.com/ethereum/go-ethereum/core/types"
 
 	"github.com/stackup-wallet/stackup-bundler/pkg/entrypoint/filter"
 	"github.com/stackup-wallet/stackup-bundler/pkg/gas"
@@ -40,9 +41,9 @@ func (r *RpcAdapter) Eth_estimateUserOperationGas(
 
 // Eth_getUserOperationReceipt routes method calls to *Client.GetUserOperationReceipt.
 func (r *RpcAdapter) Eth_getUserOperationReceipt(
-	userOpHash string,
-) (*filter.UserOperationReceipt, error) {
-	return r.client.GetUserOperationReceipt(userOpHash)
+	op userOperation,
+) (*types.Receipt, error) {
+	return r.client.GetRIP7560UserOperationReceipt(op)
 }
 
 // Eth_getUserOperationByHash routes method calls to *Client.GetUserOperationByHash.
