@@ -57,7 +57,7 @@ type EstimateInput struct {
 }
 
 // retryEstimateGas will recursively call estimateGas if execution has caused VGL to be under estimated. This
-// can occur for edge cases where a paymaster's postOp > gas required during verification or if verification
+// can occur for edge cases where a paymaster's postOp > gas is required during verification or if verification
 // has a dependency on CGL. Reset the estimate with a higher buffer on VGL.
 func retryEstimateGas(err error, vgl int64, in *EstimateInput) (uint64, uint64, error) {
 	if isValidationOOG(err) && in.attempts < maxRetries {
