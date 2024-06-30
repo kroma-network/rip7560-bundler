@@ -8,7 +8,7 @@ import (
 )
 
 // GetClientIPFromXFF returns the client ID using x-forwarded-for headers before relying on c.ClientIP().
-// This assumes use of a trusted proxy.
+// This assumes the use of a trusted proxy.
 func GetClientIPFromXFF(c *gin.Context) string {
 	forwardHeader := c.Request.Header.Get("x-forwarded-for")
 	firstAddress := strings.Split(forwardHeader, ",")[0]
