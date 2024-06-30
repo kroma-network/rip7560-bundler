@@ -8,7 +8,7 @@ Below are instructions on how to run a series of E2E tests to check that everyth
 
 ## Prerequisites
 
-The steps in the following section assumes that all these tools have been installed and ready to go.
+The steps in the following section assumes that all these tools have been installed and are ready to go.
 
 - Node.JS >= 18
 - [Geth](https://geth.ethereum.org/docs/getting-started/installing-geth)
