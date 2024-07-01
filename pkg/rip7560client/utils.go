@@ -1,6 +1,8 @@
 package rip7560client
 
 import (
+	"context"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -70,14 +72,14 @@ func GetGasPricesWithEthClient(eth *ethclient.Client) GetGasPricesFunc {
 // GetGasEstimateFunc is a general interface for fetching an estimate for verificationGasLimit and
 // callGasLimit given a userOp and EntryPoint address.
 type GetGasEstimateFunc = func(
-	ep common.Address,
+	//ep common.Address,
 	op *userop.UserOperation,
 	sos state.OverrideSet,
 ) (verificationGas uint64, callGas uint64, err error)
 
 func getGasEstimateNoop() GetGasEstimateFunc {
 	return func(
-		ep common.Address,
+		//ep common.Address,
 		op *userop.UserOperation,
 		sos state.OverrideSet,
 	) (verificationGas uint64, callGas uint64, err error) {
@@ -95,20 +97,21 @@ func GetGasEstimateWithEthClient(
 	tracer string,
 ) GetGasEstimateFunc {
 	return func(
-		ep common.Address,
+		//ep common.Address,
 		op *userop.UserOperation,
 		sos state.OverrideSet,
 	) (verificationGas uint64, callGas uint64, err error) {
-		return gas.EstimateGas(&gas.EstimateInput{
-			Rpc:         rpc,
-			EntryPoint:  ep,
-			Op:          op,
-			Sos:         sos,
-			Ov:          ov,
-			ChainID:     chain,
-			MaxGasLimit: maxGasLimit,
-			Tracer:      tracer,
-		})
+		type Rip7560UsedGas struct {
+			ValidationGas hexutil.Uint64 `json:"validationGas"`
+			ExecutionGas  hexutil.Uint64 `json:"executionGas"`
+		}
+
+		var res Rip7560UsedGas
+		req := CreateUserOperationArgs(op)
+		if err := rpc.CallContext(context.Background(), &res, "eth_estimateRip7560TransactionGas", &req, "latest", sos); err != nil {
+			return 0, 0, err
+		}
+		return uint64(res.ValidationGas), uint64(res.ExecutionGas), nil
 	}
 }
 

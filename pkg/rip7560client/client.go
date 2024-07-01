@@ -184,22 +184,22 @@ func (i *Client) EstimateUserOperationGas(
 	l := i.logger.WithName("eth_estimateUserOperationGas")
 
 	// Check EntryPoint and userOp is valid.
-	epAddr, err := i.parseEntryPointAddress(ep)
-	if err != nil {
-		l.Error(err, "eth_estimateUserOperationGas error")
-		return nil, err
-	}
-	l = l.
-		WithValues("entrypoint", epAddr.String()).
-		WithValues("chain_id", i.chainID.String())
+	//epAddr, err := i.parseEntryPointAddress(ep)
+	//if err != nil {
+	//	l.Error(err, "eth_estimateUserOperationGas error")
+	//	return nil, err
+	//}
+	//l = l.
+	//	WithValues("entrypoint", epAddr.String()).
+	//	WithValues("chain_id", i.chainID.String())
 
 	userOp, err := userop.New(op)
 	if err != nil {
 		l.Error(err, "eth_estimateUserOperationGas error")
 		return nil, err
 	}
-	hash := userOp.GetUserOpHash(epAddr, i.chainID)
-	l = l.WithValues("userop_hash", hash)
+	//hash := userOp.GetUserOpHash(epAddr, i.chainID)
+	//l = l.WithValues("userop_hash", hash)
 
 	// Parse state override set.
 	sos, err := state.ParseOverrideData(os)
@@ -222,22 +222,22 @@ func (i *Client) EstimateUserOperationGas(
 	}
 
 	// Estimate gas limits
-	vg, cg, err := i.getGasEstimate(epAddr, userOp, sos)
+	vg, cg, err := i.getGasEstimate(userOp, sos)
 	if err != nil {
 		l.Error(err, "eth_estimateUserOperationGas error")
 		return nil, err
 	}
 
 	// Calculate PreVerificationGas
-	pvg, err := i.ov.CalcPreVerificationGasWithBuffer(userOp)
-	if err != nil {
-		l.Error(err, "eth_estimateUserOperationGas error")
-		return nil, err
-	}
+	//pvg, err := i.ov.CalcPreVerificationGasWithBuffer(userOp)
+	//if err != nil {
+	//	l.Error(err, "eth_estimateUserOperationGas error")
+	//	return nil, err
+	//}
 
 	l.Info("eth_estimateUserOperationGas ok")
 	return &gas.GasEstimates{
-		PreVerificationGas:   pvg,
+		PreVerificationGas:   big.NewInt(0), // do not use this
 		VerificationGasLimit: big.NewInt(int64(vg)),
 		CallGasLimit:         big.NewInt(int64(cg)),
 
