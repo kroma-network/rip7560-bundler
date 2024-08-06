@@ -11,7 +11,6 @@ import (
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/stackup-wallet/stackup-bundler/pkg/entrypoint/filter"
 	"github.com/stackup-wallet/stackup-bundler/pkg/fees"
-	"github.com/stackup-wallet/stackup-bundler/pkg/gas"
 	"github.com/stackup-wallet/stackup-bundler/pkg/state"
 	"github.com/stackup-wallet/stackup-bundler/pkg/userop"
 )
@@ -91,7 +90,6 @@ func getGasEstimateNoop() GetGasEstimateFunc {
 // fetch an estimate for verificationGasLimit and callGasLimit.
 func GetGasEstimateWithEthClient(
 	rpc *rpc.Client,
-	ov *gas.Overhead,
 	chain *big.Int,
 	maxGasLimit *big.Int,
 	tracer string,

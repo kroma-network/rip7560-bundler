@@ -27,9 +27,8 @@ type Opts struct {
 	ChainID *big.Int
 
 	// Options for the EntryPoint
-	EntryPoint  common.Address
-	Batch       []*userop.UserOperation
-	Beneficiary common.Address
+	EntryPoint common.Address
+	Batch      []*userop.UserOperation
 
 	// Options for the EOA transaction
 	BaseFee     *big.Int
@@ -64,7 +63,8 @@ func EstimateHandleOpsGas(opts *Opts) (gas uint64, revert *reverts.FailedOpRever
 	auth.GasLimit = math.MaxUint64
 	auth.NoSend = true
 
-	tx, err := ep.HandleOps(auth, toAbiType(opts.Batch), opts.Beneficiary)
+	//tx, err := ep.HandleOps(auth, toAbiType(opts.Batch), opts.Beneficiary)
+	tx, err := ep.HandleOps(auth, toAbiType(opts.Batch), common.Address{})
 	if err != nil {
 		return 0, nil, err
 	}
@@ -120,7 +120,8 @@ func HandleOps(opts *Opts) (txn *types.Transaction, err error) {
 		return nil, errors.New("transaction: either the dynamic or legacy gas fees must be set")
 	}
 
-	txn, err = ep.HandleOps(auth, toAbiType(opts.Batch), opts.Beneficiary)
+	//txn, err = ep.HandleOps(auth, toAbiType(opts.Batch), opts.Beneficiary)
+	txn, err = ep.HandleOps(auth, toAbiType(opts.Batch), common.Address{})
 	if err != nil {
 		return nil, err
 	} else if opts.WaitTimeout == 0 || opts.NoSend {

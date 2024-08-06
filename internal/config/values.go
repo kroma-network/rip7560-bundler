@@ -10,7 +10,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/viper"
 	"github.com/stackup-wallet/stackup-bundler/pkg/modules/entities"
-	"github.com/stackup-wallet/stackup-bundler/pkg/signer"
 )
 
 type Values struct {
@@ -24,7 +23,6 @@ type Values struct {
 	MaxBatchGasLimit             *big.Int
 	MaxOpTTL                     time.Duration
 	OpLookupLimit                uint64
-	Beneficiary                  string
 	NativeBundlerCollectorTracer string
 	NativeBundlerExecutorTracer  string
 	ReputationConstants          *entities.ReputationConstants
@@ -44,9 +42,7 @@ type Values struct {
 	AltMempoolIds         []string
 
 	// Rollup related variables.
-	IsOpStackNetwork   bool
 	IsRIP7212Supported bool
-	IsArbStackNetwork  bool
 
 	// Undocumented variables.
 	DebugMode bool
@@ -94,6 +90,7 @@ func GetValues() *Values {
 	viper.SetDefault("erc4337_bundler_data_directory", "/tmp/stackup_bundler")
 	viper.SetDefault("erc4337_bundler_supported_entry_points", "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789")
 	viper.SetDefault("erc4337_bundler_max_verification_gas", 6000000)
+	// TODO : check max value - erc4337_bundler_max_batch_gas_limit
 	viper.SetDefault("erc4337_bundler_max_batch_gas_limit", 18000000)
 	viper.SetDefault("erc4337_bundler_max_op_ttl_seconds", 180)
 	viper.SetDefault("erc4337_bundler_op_lookup_limit", 2000)
@@ -101,7 +98,7 @@ func GetValues() *Values {
 	viper.SetDefault("erc4337_bundler_otel_insecure_mode", false)
 	viper.SetDefault("erc4337_bundler_is_op_stack_network", false)
 	viper.SetDefault("erc4337_bundler_is_arb_stack_network", false)
-	viper.SetDefault("erc4337_bundler_is_rip7212_supported", false)
+	viper.SetDefault("erc4337_bundler_is_rip7212_supported", true)
 	viper.SetDefault("erc4337_bundler_debug_mode", false)
 	viper.SetDefault("erc4337_bundler_gin_mode", gin.ReleaseMode)
 
@@ -124,7 +121,6 @@ func GetValues() *Values {
 	_ = viper.BindEnv("erc4337_bundler_port")
 	_ = viper.BindEnv("erc4337_bundler_data_directory")
 	_ = viper.BindEnv("erc4337_bundler_supported_entry_points")
-	_ = viper.BindEnv("erc4337_bundler_beneficiary")
 	_ = viper.BindEnv("erc4337_bundler_native_bundler_collector_tracer")
 	_ = viper.BindEnv("erc4337_bundler_native_bundler_executor_tracer")
 	_ = viper.BindEnv("erc4337_bundler_max_verification_gas")
@@ -154,14 +150,6 @@ func GetValues() *Values {
 		panic("Fatal config error: erc4337_bundler_private_key not set")
 	}
 
-	if !viper.IsSet("erc4337_bundler_beneficiary") {
-		s, err := signer.New(viper.GetString("erc4337_bundler_private_key"))
-		if err != nil {
-			panic(err)
-		}
-		viper.SetDefault("erc4337_bundler_beneficiary", s.Address.String())
-	}
-
 	switch viper.GetString("mode") {
 	case "searcher":
 		if variableNotSetOrIsNil("erc4337_bundler_eth_builder_urls") {
@@ -187,7 +175,6 @@ func GetValues() *Values {
 	port := viper.GetInt("erc4337_bundler_port")
 	dataDirectory := viper.GetString("erc4337_bundler_data_directory")
 	supportedEntryPoints := envArrayToAddressSlice(viper.GetString("erc4337_bundler_supported_entry_points"))
-	beneficiary := viper.GetString("erc4337_bundler_beneficiary")
 	nativeBundlerCollectorTracer := viper.GetString("erc4337_bundler_native_bundler_collector_tracer")
 	nativeBundlerExecutorTracer := viper.GetString("erc4337_bundler_native_bundler_executor_tracer")
 	maxVerificationGas := big.NewInt(int64(viper.GetInt("erc4337_bundler_max_verification_gas")))
@@ -202,8 +189,6 @@ func GetValues() *Values {
 	otelInsecureMode := viper.GetBool("erc4337_bundler_otel_insecure_mode")
 	altMempoolIPFSGateway := viper.GetString("erc4337_bundler_alt_mempool_ipfs_gateway")
 	altMempoolIds := envArrayToStringSlice(viper.GetString("erc4337_bundler_alt_mempool_ids"))
-	isOpStackNetwork := viper.GetBool("erc4337_bundler_is_op_stack_network")
-	isArbStackNetwork := viper.GetBool("erc4337_bundler_is_arb_stack_network")
 	isRIP7212Supported := viper.GetBool("erc4337_bundler_is_rip7212_supported")
 	debugMode := viper.GetBool("erc4337_bundler_debug_mode")
 	ginMode := viper.GetString("erc4337_bundler_gin_mode")
@@ -213,7 +198,6 @@ func GetValues() *Values {
 		Port:                         port,
 		DataDirectory:                dataDirectory,
 		SupportedEntryPoints:         supportedEntryPoints,
-		Beneficiary:                  beneficiary,
 		NativeBundlerCollectorTracer: nativeBundlerCollectorTracer,
 		NativeBundlerExecutorTracer:  nativeBundlerExecutorTracer,
 		MaxVerificationGas:           maxVerificationGas,
@@ -229,8 +213,6 @@ func GetValues() *Values {
 		OTELInsecureMode:             otelInsecureMode,
 		AltMempoolIPFSGateway:        altMempoolIPFSGateway,
 		AltMempoolIds:                altMempoolIds,
-		IsOpStackNetwork:             isOpStackNetwork,
-		IsArbStackNetwork:            isArbStackNetwork,
 		IsRIP7212Supported:           isRIP7212Supported,
 		DebugMode:                    debugMode,
 		GinMode:                      ginMode,

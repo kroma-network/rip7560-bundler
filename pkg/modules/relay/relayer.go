@@ -6,7 +6,6 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/go-logr/logr"
@@ -31,7 +30,6 @@ type Relayer struct {
 	eth         *ethclient.Client
 	chainID     *big.Int
 	rpc         *rpc.Client
-	beneficiary common.Address
 	logger      logr.Logger
 	waitTimeout time.Duration
 }
@@ -42,7 +40,6 @@ func New(
 	eth *ethclient.Client,
 	chainID *big.Int,
 	rpc *rpc.Client,
-	beneficiary common.Address,
 	l logr.Logger,
 ) *Relayer {
 	return &Relayer{
@@ -50,7 +47,6 @@ func New(
 		eth:         eth,
 		chainID:     chainID,
 		rpc:         rpc,
-		beneficiary: beneficiary,
 		logger:      l.WithName("relayer"),
 		waitTimeout: DefaultWaitTimeout,
 	}
@@ -104,7 +100,6 @@ func (r *Relayer) SendUserOperation() modules.BatchHandlerFunc {
 			ChainID:     ctx.ChainID,
 			EntryPoint:  ctx.EntryPoint,
 			Batch:       ctx.Batch,
-			Beneficiary: r.beneficiary,
 			BaseFee:     ctx.BaseFee,
 			Tip:         ctx.Tip,
 			GasPrice:    ctx.GasPrice,

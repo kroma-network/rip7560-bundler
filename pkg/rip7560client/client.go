@@ -25,7 +25,6 @@ import (
 // implements the required RPC methods as specified in EIP-4337.
 type Client struct {
 	mempool                 *mempool.Mempool
-	ov                      *gas.Overhead
 	chainID                 *big.Int
 	supportedEntryPoints    []common.Address
 	userOpHandler           modules.UserOpHandlerFunc
@@ -43,14 +42,12 @@ type Client struct {
 // that are allowed to be added to the mempool.
 func New(
 	mempool *mempool.Mempool,
-	ov *gas.Overhead,
 	chainID *big.Int,
 	supportedEntryPoints []common.Address,
 	opLookupLimit uint64,
 ) *Client {
 	return &Client{
 		mempool:                 mempool,
-		ov:                      ov,
 		chainID:                 chainID,
 		supportedEntryPoints:    supportedEntryPoints,
 		userOpHandler:           noop.UserOpHandler,
@@ -329,7 +326,6 @@ func getTransactionHashByUserOp(op userOperation) (common.Hash, error) {
 
 	txArgs := CreateUserOperationArgs(userOp)
 	gas, _ := strconv.ParseUint(txArgs.Gas[2:], 16, 64)
-	subType, _ := strconv.ParseUint(txArgs.SubType[2:], 16, 64)
 	sender := common.HexToAddress(txArgs.Sender)
 	builderFee, _ := new(big.Int).SetString(txArgs.BuilderFee, 0)
 	validationGas, _ := strconv.ParseUint(txArgs.ValidationGas[2:], 16, 64)
@@ -337,7 +333,6 @@ func getTransactionHashByUserOp(op userOperation) (common.Hash, error) {
 	postopGas, _ := strconv.ParseUint(txArgs.PostOpGas[2:], 16, 64)
 	bigNonce, _ := new(big.Int).SetString(txArgs.BigNonce, 0)
 	aatx := types.Rip7560AccountAbstractionTx{
-		Subtype:    subType,
 		To:         &common.Address{},
 		ChainID:    nil,
 		Gas:        gas,
