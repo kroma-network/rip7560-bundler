@@ -7,7 +7,6 @@ import (
 	"net/http"
 
 	badger "github.com/dgraph-io/badger/v3"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/gin-contrib/cors"
@@ -18,7 +17,6 @@ import (
 	"github.com/stackup-wallet/stackup-bundler/pkg/altmempools"
 	"github.com/stackup-wallet/stackup-bundler/pkg/bundler"
 	"github.com/stackup-wallet/stackup-bundler/pkg/entrypoint/stake"
-	"github.com/stackup-wallet/stackup-bundler/pkg/gas"
 	"github.com/stackup-wallet/stackup-bundler/pkg/jsonrpc"
 	"github.com/stackup-wallet/stackup-bundler/pkg/mempool"
 	"github.com/stackup-wallet/stackup-bundler/pkg/modules/batch"
@@ -37,14 +35,13 @@ func Rip7560Mode() {
 	conf := config.GetValues()
 
 	logr := logger.NewZeroLogr().
-		WithName("stackup_bundler").
-		WithValues("bundler_mode", "private")
+		WithName("rip7560_bundler").
+		WithValues("bundler_mode", "rip7560")
 
 	eoa, err := signer.New(conf.PrivateKey)
 	if err != nil {
 		log.Fatal(err)
 	}
-	beneficiary := common.HexToAddress(conf.Beneficiary)
 
 	db, err := badger.Open(badger.DefaultOptions(conf.DataDirectory))
 	if err != nil {
@@ -65,6 +62,7 @@ func Rip7560Mode() {
 		log.Fatal(err)
 	}
 
+	// TODO : o11y adaptation
 	if o11y.IsEnabled(conf.OTELServiceName) {
 		o11yOpts := &o11y.Opts{
 			ServiceName:     conf.OTELServiceName,
@@ -83,24 +81,12 @@ func Rip7560Mode() {
 		defer metricsCleanup()
 	}
 
-	ov := gas.NewDefaultOverhead()
-	if conf.IsArbStackNetwork || config.ArbStackChains.Contains(chain.Uint64()) {
-		ov.SetCalcPreVerificationGasFunc(gas.CalcArbitrumPVGWithEthClient(rpc, conf.SupportedEntryPoints[0]))
-		ov.SetPreVerificationGasBufferFactor(16)
-	}
-
-	if conf.IsOpStackNetwork || config.OpStackChains.Contains(chain.Uint64()) {
-		ov.SetCalcPreVerificationGasFunc(
-			gas.CalcOptimismPVGWithEthClient(rpc, chain, conf.SupportedEntryPoints[0]),
-		)
-		ov.SetPreVerificationGasBufferFactor(1)
-	}
-
 	mem, err := mempool.New(db)
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	// TODO : alt needed?
 	alt, err := altmempools.NewFromIPFS(chain, conf.AltMempoolIPFSGateway, conf.AltMempoolIds)
 	if err != nil {
 		log.Fatal(err)
@@ -109,7 +95,6 @@ func Rip7560Mode() {
 	check := checks.New(
 		db,
 		rpc,
-		ov,
 		alt,
 		conf.MaxVerificationGas,
 		conf.MaxBatchGasLimit,
@@ -120,19 +105,18 @@ func Rip7560Mode() {
 
 	exp := expire.New(conf.MaxOpTTL)
 
-	relayer := relay.New(eoa, eth, chain, rpc, beneficiary, logr)
+	relayer := relay.New(eoa, eth, chain, rpc, logr)
 
 	rep := entities.New(db, eth, conf.ReputationConstants)
 
 	// Init Client
-	c := rip7560client.New(mem, ov, chain, conf.SupportedEntryPoints, conf.OpLookupLimit)
+	c := rip7560client.New(mem, chain, conf.SupportedEntryPoints, conf.OpLookupLimit)
 	c.SetGetUserOpReceiptFunc(rip7560client.GetUserOpReceiptWithEthClient(eth))
 	c.SetGetRip7560UserOpReceiptFunc(rip7560client.GetRip7560UserOpReceiptWithEthClient(eth))
 	c.SetGetGasPricesFunc(rip7560client.GetGasPricesWithEthClient(eth))
 	c.SetGetGasEstimateFunc(
 		rip7560client.GetGasEstimateWithEthClient(
 			rpc,
-			ov,
 			chain,
 			conf.MaxBatchGasLimit,
 			conf.NativeBundlerExecutorTracer,
@@ -150,6 +134,7 @@ func Rip7560Mode() {
 	)
 
 	// Init Bundler
+	// TODO : remove config - SupportedEntryPoints
 	b := bundler.New(mem, chain, conf.SupportedEntryPoints)
 	b.SetGetBaseFeeFunc(gasprice.GetBaseFeeWithEthClient(eth))
 	b.SetGetGasTipFunc(gasprice.GetGasTipWithEthClient(eth))
@@ -159,14 +144,15 @@ func Rip7560Mode() {
 		log.Fatal(err)
 	}
 	b.UseModules(
-		//TODO :
 		exp.DropExpired(),
 		gasprice.SortByGasPrice(),
 		gasprice.FilterUnderpriced(),
 		batch.SortByNonce(),
 		batch.MaintainGasLimit(conf.MaxBatchGasLimit),
 		//check.CodeHashes(),
+		// TODO : Implement
 		//check.PaymasterDeposit(),
+		// TODO: Implement
 		check.SimulateBatch(),
 		//relayer.SendUserOperation(),
 		relayer.SendUserOperationRip7560(),
@@ -183,7 +169,7 @@ func Rip7560Mode() {
 	// init Debug
 	var d *rip7560client.Debug
 	if conf.DebugMode {
-		d = rip7560client.NewDebug(eoa, eth, mem, rep, b, chain, conf.SupportedEntryPoints[0], beneficiary)
+		d = rip7560client.NewDebug(eoa, eth, mem, rep, b, chain, conf.SupportedEntryPoints[0])
 		b.SetMaxBatch(1)
 		relayer.SetWaitTimeout(0)
 	}

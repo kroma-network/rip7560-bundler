@@ -14,7 +14,6 @@ import (
 	"github.com/stackup-wallet/stackup-bundler/pkg/entrypoint"
 	"github.com/stackup-wallet/stackup-bundler/pkg/entrypoint/simulation"
 	"github.com/stackup-wallet/stackup-bundler/pkg/errors"
-	"github.com/stackup-wallet/stackup-bundler/pkg/gas"
 	"github.com/stackup-wallet/stackup-bundler/pkg/modules"
 	"github.com/stackup-wallet/stackup-bundler/pkg/modules/entities"
 	"github.com/stackup-wallet/stackup-bundler/pkg/modules/gasprice"
@@ -29,7 +28,6 @@ type Standalone struct {
 	db                 *badger.DB
 	rpc                *rpc.Client
 	eth                *ethclient.Client
-	ov                 *gas.Overhead
 	alt                *altmempools.Directory
 	maxVerificationGas *big.Int
 	maxBatchGasLimit   *big.Int
@@ -43,7 +41,6 @@ type Standalone struct {
 func New(
 	db *badger.DB,
 	rpc *rpc.Client,
-	ov *gas.Overhead,
 	alt *altmempools.Directory,
 	maxVerificationGas *big.Int,
 	maxBatchGasLimit *big.Int,
@@ -56,7 +53,6 @@ func New(
 		db,
 		rpc,
 		eth,
-		ov,
 		alt,
 		maxVerificationGas,
 		maxBatchGasLimit,
@@ -77,7 +73,6 @@ func (s *Standalone) ValidateOpValues() modules.UserOpHandlerFunc {
 		g.Go(func() error { return ValidateInitCode(ctx.UserOp) })
 		//g.Go(func() error { return ValidateVerificationGas(ctx.UserOp, s.ov, s.maxVerificationGas) })
 		g.Go(func() error { return ValidatePaymasterAndData(ctx.UserOp, ctx.GetPaymasterDepositInfo(), gc) })
-		g.Go(func() error { return ValidateCallGasLimit(ctx.UserOp, s.ov) })
 		g.Go(func() error { return ValidateFeePerGas(ctx.UserOp, gasprice.GetBaseFeeWithEthClient(s.eth)) })
 		g.Go(func() error { return ValidatePendingOps(ctx.UserOp, ctx.GetPendingSenderOps()) })
 		g.Go(func() error { return ValidateGasAvailable(ctx.UserOp, s.maxBatchGasLimit) })

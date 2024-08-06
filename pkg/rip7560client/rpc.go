@@ -54,6 +54,7 @@ func (r *RpcAdapter) Eth_getUserOperationByHash(
 }
 
 // Eth_supportedEntryPoints routes method calls to *Client.SupportedEntryPoints.
+// TODO : is this needed?
 func (r *RpcAdapter) Eth_supportedEntryPoints() ([]string, error) {
 	return r.client.SupportedEntryPoints()
 }
