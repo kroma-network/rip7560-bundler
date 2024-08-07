@@ -7,10 +7,10 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/stackup-wallet/stackup-bundler/pkg/client"
 	"github.com/stackup-wallet/stackup-bundler/pkg/entrypoint"
 	"github.com/stackup-wallet/stackup-bundler/pkg/entrypoint/reverts"
 	"github.com/stackup-wallet/stackup-bundler/pkg/errors"
-	"github.com/stackup-wallet/stackup-bundler/pkg/rip7560client"
 	"github.com/stackup-wallet/stackup-bundler/pkg/userop"
 )
 
@@ -52,7 +52,7 @@ func SimulateRIP7560Validation(
 	op *userop.UserOperation,
 ) (*reverts.ValidationPhaseResult, error) {
 	var res reverts.ValidationPhaseResult
-	req := rip7560client.CreateUserOperationArgs(op)
+	req := client.CreateUserOperationArgs(op)
 	if err := rpc.CallContext(context.Background(), &res, "eth_callRip7560Validation", &req, "latest"); err != nil {
 		return nil, err
 	}

@@ -14,10 +14,10 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/stackup-wallet/stackup-bundler/pkg/altmempools"
+	"github.com/stackup-wallet/stackup-bundler/pkg/client"
 	"github.com/stackup-wallet/stackup-bundler/pkg/entrypoint"
 	"github.com/stackup-wallet/stackup-bundler/pkg/entrypoint/methods"
 	"github.com/stackup-wallet/stackup-bundler/pkg/entrypoint/utils"
-	"github.com/stackup-wallet/stackup-bundler/pkg/rip7560client"
 	"github.com/stackup-wallet/stackup-bundler/pkg/state"
 	"github.com/stackup-wallet/stackup-bundler/pkg/tracer"
 	"github.com/stackup-wallet/stackup-bundler/pkg/userop"
@@ -181,7 +181,7 @@ func TraceSimulateValidation(in *TraceInput) (*TraceOutput, error) {
 // information related to the validation phase of a UserOperation.
 func TraceSimulateRIP7560Validation(in *TraceInput) (*TraceOutput, error) {
 	var res tracer.BundlerCollectorReturn
-	req := rip7560client.CreateUserOperationArgs(in.Op)
+	req := client.CreateUserOperationArgs(in.Op)
 	opts := utils.TraceCallOpts{
 		//Tracer:         t,
 		StateOverrides: state.WithMaxBalanceOverride(common.HexToAddress("0x"), nil),
