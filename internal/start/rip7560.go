@@ -110,8 +110,8 @@ func Rip7560Mode() {
 	rep := entities.New(db, eth, conf.ReputationConstants)
 
 	// Init Client
-	c := client.New(mem, chain, conf.SupportedEntryPoints, conf.OpLookupLimit)
-	c.SetGetRip7560UserOpReceiptFunc(client.GetRip7560UserOpReceiptWithEthClient(eth))
+	c := client.New(mem, chain, conf.OpLookupLimit)
+	c.SetGetUserOpReceiptFunc(client.GetUserOpReceiptWithEthClient(eth))
 	c.SetGetGasPricesFunc(client.GetGasPricesWithEthClient(eth))
 	c.SetGetGasEstimateFunc(
 		client.GetGasEstimateWithEthClient(
@@ -121,7 +121,6 @@ func Rip7560Mode() {
 			conf.NativeBundlerExecutorTracer,
 		),
 	)
-	c.SetGetUserOpByHashFunc(client.GetUserOpByHashWithEthClient(eth))
 	c.SetGetStakeFunc(stake.GetStakeWithEthClient(eth))
 	c.UseLogger(logr)
 	c.UseModules(
@@ -133,8 +132,7 @@ func Rip7560Mode() {
 	)
 
 	// Init Bundler
-	// TODO : remove config - SupportedEntryPoints
-	b := bundler.New(mem, chain, conf.SupportedEntryPoints)
+	b := bundler.New(mem, chain)
 	b.SetGetBaseFeeFunc(gasprice.GetBaseFeeWithEthClient(eth))
 	b.SetGetGasTipFunc(gasprice.GetGasTipWithEthClient(eth))
 	b.SetGetLegacyGasPriceFunc(gasprice.GetLegacyGasPriceWithEthClient(eth))
@@ -164,7 +162,7 @@ func Rip7560Mode() {
 	// init Debug
 	var d *client.Debug
 	if conf.DebugMode {
-		d = client.NewDebug(eoa, eth, mem, rep, b, chain, conf.SupportedEntryPoints[0])
+		d = client.NewDebug(eoa, eth, mem, rep, b, chain)
 		b.SetMaxBatch(1)
 		relayer.SetWaitTimeout(0)
 	}

@@ -2,12 +2,10 @@ package filter
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 )
@@ -38,72 +36,9 @@ type UserOperationReceipt struct {
 	Logs          []*types.Log       `json:"logs"`
 }
 
-// GetUserOperationReceipt filters the EntryPoint contract for UserOperationEvents and returns a receipt for
-// both the UserOperation and accompanying transaction.
 func GetUserOperationReceipt(
 	eth *ethclient.Client,
-	userOpHash string,
-	entryPoint common.Address,
-	blkRange uint64,
-) (*UserOperationReceipt, error) {
-	if !IsValidUserOpHash(userOpHash) {
-		//lint:ignore ST1005 This needs to match the bundler test spec.
-		return nil, errors.New("Missing/invalid userOpHash")
-	}
-
-	it, err := filterUserOperationEvent(eth, userOpHash, entryPoint, blkRange)
-	if err != nil {
-		return nil, err
-	}
-
-	if it.Next() {
-		receipt, err := eth.TransactionReceipt(context.Background(), it.Event.Raw.TxHash)
-		if err != nil {
-			return nil, err
-		}
-		tx, isPending, err := eth.TransactionByHash(context.Background(), it.Event.Raw.TxHash)
-		if err != nil {
-			return nil, err
-		} else if isPending {
-			return nil, nil
-		}
-		from, err := types.Sender(types.LatestSignerForChainID(tx.ChainId()), tx)
-		if err != nil {
-			return nil, err
-		}
-
-		txnReceipt := &parsedTransaction{
-			BlockHash:         receipt.BlockHash,
-			BlockNumber:       hexutil.EncodeBig(receipt.BlockNumber),
-			From:              from,
-			CumulativeGasUsed: hexutil.EncodeBig(big.NewInt(0).SetUint64(receipt.CumulativeGasUsed)),
-			GasUsed:           hexutil.EncodeBig(big.NewInt(0).SetUint64(receipt.GasUsed)),
-			Logs:              receipt.Logs,
-			LogsBloom:         receipt.Bloom,
-			TransactionHash:   receipt.TxHash,
-			TransactionIndex:  hexutil.EncodeBig(big.NewInt(0).SetUint64(uint64(receipt.TransactionIndex))),
-			EffectiveGasPrice: hexutil.EncodeBig(tx.GasPrice()),
-		}
-		return &UserOperationReceipt{
-			UserOpHash:    it.Event.UserOpHash,
-			Sender:        it.Event.Sender,
-			Paymaster:     it.Event.Paymaster,
-			Nonce:         hexutil.EncodeBig(it.Event.Nonce),
-			Success:       it.Event.Success,
-			ActualGasCost: hexutil.EncodeBig(it.Event.ActualGasCost),
-			ActualGasUsed: hexutil.EncodeBig(it.Event.ActualGasUsed),
-			From:          from,
-			Receipt:       txnReceipt,
-			Logs:          []*types.Log{&it.Event.Raw},
-		}, nil
-	}
-
-	return nil, nil
-}
-
-func GetRip7560UserOperationReceipt(
-	eth *ethclient.Client,
-	txHash common.Hash,
+	txHash string,
 	blkRange uint64) (*types.Receipt, error) {
 
 	header, err := eth.HeaderByNumber(context.Background(), nil)
@@ -122,8 +57,8 @@ func GetRip7560UserOperationReceipt(
 		}
 
 		for _, tx := range block.Transactions() {
-			if tx.Hash() == txHash {
-				receipt, err := eth.TransactionReceipt(context.Background(), txHash)
+			if tx.Hash().String() == txHash {
+				receipt, err := eth.TransactionReceipt(context.Background(), tx.Hash())
 				if err != nil {
 					return nil, fmt.Errorf("failed to retrieve transaction receipt: %v", err)
 				}

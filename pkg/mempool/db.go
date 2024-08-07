@@ -14,15 +14,10 @@ var (
 	keyPrefix = dbutils.JoinValues("mempool")
 )
 
-func getUniqueKey(entryPoint common.Address, sender common.Address, nonce *big.Int) []byte {
+func getUniqueKey(sender common.Address, nonce *big.Int) []byte {
 	return []byte(
-		dbutils.JoinValues(keyPrefix, entryPoint.String(), sender.String(), nonce.String()),
+		dbutils.JoinValues(keyPrefix, sender.String(), nonce.String()),
 	)
-}
-
-func getEntryPointFromDBKey(key []byte) common.Address {
-	slc := dbutils.SplitValues(string(key))
-	return common.HexToAddress(slc[1])
 }
 
 func getUserOpFromDBValue(value []byte) (*userop.UserOperation, error) {
@@ -49,7 +44,6 @@ func loadFromDisk(db *badger.DB, q *userOpQueues) error {
 
 		for it.Seek(prefix); it.ValidForPrefix(prefix); it.Next() {
 			item := it.Item()
-			ep := getEntryPointFromDBKey(item.Key())
 
 			err := item.Value(func(v []byte) error {
 				op, err := getUserOpFromDBValue(v)
@@ -57,7 +51,7 @@ func loadFromDisk(db *badger.DB, q *userOpQueues) error {
 					return err
 				}
 
-				q.AddOp(ep, op)
+				q.AddOp(op)
 				return nil
 			})
 

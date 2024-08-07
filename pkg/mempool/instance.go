@@ -28,35 +28,35 @@ func New(db *badger.DB) (*Mempool, error) {
 }
 
 // GetOps returns all the UserOperations associated with an EntryPoint and Sender address.
-func (m *Mempool) GetOps(entryPoint common.Address, sender common.Address) ([]*userop.UserOperation, error) {
-	ops := m.queue.GetOps(entryPoint, sender)
+func (m *Mempool) GetOps(sender common.Address) ([]*userop.UserOperation, error) {
+	ops := m.queue.GetOps(sender)
 	return ops, nil
 }
 
 // AddOp adds a UserOperation to the mempool or replace an existing one with the same EntryPoint, Sender, and
 // Nonce values.
-func (m *Mempool) AddOp(entryPoint common.Address, op *userop.UserOperation) error {
+func (m *Mempool) AddOp(op *userop.UserOperation) error {
 	data, err := op.MarshalJSON()
 	if err != nil {
 		return err
 	}
 
 	err = m.db.Update(func(txn *badger.Txn) error {
-		return txn.Set(getUniqueKey(entryPoint, op.Sender, op.Nonce), data)
+		return txn.Set(getUniqueKey(op.Sender, op.Nonce), data)
 	})
 	if err != nil {
 		return err
 	}
 
-	m.queue.AddOp(entryPoint, op)
+	m.queue.AddOp(op)
 	return nil
 }
 
 // RemoveOps removes a list of UserOperations from the mempool by EntryPoint, Sender, and Nonce values.
-func (m *Mempool) RemoveOps(entryPoint common.Address, ops ...*userop.UserOperation) error {
+func (m *Mempool) RemoveOps(ops ...*userop.UserOperation) error {
 	err := m.db.Update(func(txn *badger.Txn) error {
 		for _, op := range ops {
-			err := txn.Delete(getUniqueKey(entryPoint, op.Sender, op.Nonce))
+			err := txn.Delete(getUniqueKey(op.Sender, op.Nonce))
 			if err != nil {
 				return err
 			}
@@ -68,13 +68,13 @@ func (m *Mempool) RemoveOps(entryPoint common.Address, ops ...*userop.UserOperat
 		return err
 	}
 
-	m.queue.RemoveOps(entryPoint, ops...)
+	m.queue.RemoveOps(ops...)
 	return nil
 }
 
 // Dump will return a list of UserOperations from the mempool by EntryPoint in the order it arrived.
-func (m *Mempool) Dump(entryPoint common.Address) ([]*userop.UserOperation, error) {
-	return m.queue.All(entryPoint), nil
+func (m *Mempool) Dump() ([]*userop.UserOperation, error) {
+	return m.queue.All(), nil
 }
 
 // Clear will clear the entire embedded db and reset it to a clean state.

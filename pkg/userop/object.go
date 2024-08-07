@@ -191,11 +191,11 @@ func (op *UserOperation) PackForSignature() []byte {
 	return packed
 }
 
+// TODO : need check!!!
 // GetUserOpHash returns the hash of the userOp + entryPoint address + chainID.
-func (op *UserOperation) GetUserOpHash(entryPoint common.Address, chainID *big.Int) common.Hash {
+func (op *UserOperation) GetUserOpHash(chainID *big.Int) common.Hash {
 	return crypto.Keccak256Hash(
 		crypto.Keccak256(op.PackForSignature()),
-		common.LeftPadBytes(entryPoint.Bytes(), 32),
 		common.LeftPadBytes(chainID.Bytes(), 32),
 	)
 }

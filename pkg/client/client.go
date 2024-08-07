@@ -2,7 +2,6 @@
 package client
 
 import (
-	"errors"
 	"math/big"
 	"strconv"
 
@@ -11,7 +10,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/go-logr/logr"
 	"github.com/stackup-wallet/stackup-bundler/internal/logger"
-	"github.com/stackup-wallet/stackup-bundler/pkg/entrypoint/filter"
 	"github.com/stackup-wallet/stackup-bundler/pkg/entrypoint/stake"
 	"github.com/stackup-wallet/stackup-bundler/pkg/gas"
 	"github.com/stackup-wallet/stackup-bundler/pkg/mempool"
@@ -24,18 +22,15 @@ import (
 // Client controls the end to end process of adding incoming UserOperations to the mempool. It also
 // implements the required RPC methods as specified in EIP-4337.
 type Client struct {
-	mempool                 *mempool.Mempool
-	chainID                 *big.Int
-	supportedEntryPoints    []common.Address
-	userOpHandler           modules.UserOpHandlerFunc
-	logger                  logr.Logger
-	getUserOpReceipt        GetUserOpReceiptFunc
-	getRip7560UserOpReceipt GetRip7560UserOpReceiptFunc
-	getGasPrices            GetGasPricesFunc
-	getGasEstimate          GetGasEstimateFunc
-	getUserOpByHash         GetUserOpByHashFunc
-	getStakeFunc            stake.GetStakeFunc
-	opLookupLimit           uint64
+	mempool          *mempool.Mempool
+	chainID          *big.Int
+	userOpHandler    modules.UserOpHandlerFunc
+	logger           logr.Logger
+	getUserOpReceipt GetUserOpReceiptFunc
+	getGasPrices     GetGasPricesFunc
+	getGasEstimate   GetGasEstimateFunc
+	getStakeFunc     stake.GetStakeFunc
+	opLookupLimit    uint64
 }
 
 // New initializes a new ERC-4337 client which can be extended with modules for validating UserOperations
@@ -43,33 +38,19 @@ type Client struct {
 func New(
 	mempool *mempool.Mempool,
 	chainID *big.Int,
-	supportedEntryPoints []common.Address,
 	opLookupLimit uint64,
 ) *Client {
 	return &Client{
-		mempool:                 mempool,
-		chainID:                 chainID,
-		supportedEntryPoints:    supportedEntryPoints,
-		userOpHandler:           noop.UserOpHandler,
-		logger:                  logger.NewZeroLogr().WithName("client"),
-		getUserOpReceipt:        getUserOpReceiptNoop(),
-		getRip7560UserOpReceipt: getRip7560UserOpReceiptNoop(),
-		getGasPrices:            getGasPricesNoop(),
-		getGasEstimate:          getGasEstimateNoop(),
-		getUserOpByHash:         getUserOpByHashNoop(),
-		getStakeFunc:            stake.GetStakeFuncNoop(),
-		opLookupLimit:           opLookupLimit,
+		mempool:          mempool,
+		chainID:          chainID,
+		userOpHandler:    noop.UserOpHandler,
+		logger:           logger.NewZeroLogr().WithName("client"),
+		getUserOpReceipt: getUserOpReceiptNoop(),
+		getGasPrices:     getGasPricesNoop(),
+		getGasEstimate:   getGasEstimateNoop(),
+		getStakeFunc:     stake.GetStakeFuncNoop(),
+		opLookupLimit:    opLookupLimit,
 	}
-}
-
-func (i *Client) parseEntryPointAddress(ep string) (common.Address, error) {
-	for _, addr := range i.supportedEntryPoints {
-		if common.HexToAddress(ep) == addr {
-			return addr, nil
-		}
-	}
-
-	return common.Address{}, errors.New("entryPoint: Implementation not supported")
 }
 
 // UseLogger defines the logger object used by the Client instance based on the go-logr/logr interface.
@@ -82,16 +63,10 @@ func (i *Client) UseModules(handlers ...modules.UserOpHandlerFunc) {
 	i.userOpHandler = modules.ComposeUserOpHandlerFunc(handlers...)
 }
 
-// SetGetUserOpReceiptFunc defines a general function for fetching a UserOpReceipt given a userOpHash and
+// SetGetUserOpRip7560ReceiptFunc defines a general function for fetching a UserOpReceipt given a userOpHash and
 // EntryPoint address. This function is called in *Client.GetUserOperationReceipt.
 func (i *Client) SetGetUserOpReceiptFunc(fn GetUserOpReceiptFunc) {
 	i.getUserOpReceipt = fn
-}
-
-// SetGetUserOpRip7560ReceiptFunc defines a general function for fetching a UserOpReceipt given a userOpHash and
-// EntryPoint address. This function is called in *Client.GetUserOperationReceipt.
-func (i *Client) SetGetRip7560UserOpReceiptFunc(fn GetRip7560UserOpReceiptFunc) {
-	i.getRip7560UserOpReceipt = fn
 }
 
 // SetGetGasPricesFunc defines a general function for fetching values for maxFeePerGas and
@@ -108,12 +83,6 @@ func (i *Client) SetGetGasEstimateFunc(fn GetGasEstimateFunc) {
 	i.getGasEstimate = fn
 }
 
-// SetGetUserOpByHashFunc defines a general function for fetching a userOp given a userOpHash, EntryPoint
-// address, and chain ID. This function is called in *Client.GetUserOperationByHash.
-func (i *Client) SetGetUserOpByHashFunc(fn GetUserOpByHashFunc) {
-	i.getUserOpByHash = fn
-}
-
 // SetGetStakeFunc defines a general function for retrieving the EntryPoint stake for a given address. This
 // function is called in *Client.SendUserOperation to create a context.
 func (i *Client) SetGetStakeFunc(fn stake.GetStakeFunc) {
@@ -122,10 +91,9 @@ func (i *Client) SetGetStakeFunc(fn stake.GetStakeFunc) {
 
 // SendUserOperation implements the method call for eth_sendUserOperation.
 // It returns true if userOp was accepted otherwise returns an error.
-func (i *Client) SendUserOperation(op map[string]any, ep string) (string, error) {
+func (i *Client) SendUserOperation(op map[string]any) (string, error) {
 	// Init logger
 	l := i.logger.WithName("eth_sendUserOperation")
-	epAddr := common.Address{}
 	l = l.WithValues("chain_id", i.chainID.String())
 
 	userOp, err := userop.New(op)
@@ -144,7 +112,6 @@ func (i *Client) SendUserOperation(op map[string]any, ep string) (string, error)
 	// Run through client module stack.
 	ctx, err := modules.NewUserOpHandlerContext(
 		userOp,
-		epAddr,
 		i.chainID,
 		i.mempool,
 		i.getStakeFunc,
@@ -159,7 +126,7 @@ func (i *Client) SendUserOperation(op map[string]any, ep string) (string, error)
 	}
 
 	// Add userOp to mempool.
-	if err := i.mempool.AddOp(epAddr, ctx.UserOp); err != nil {
+	if err := i.mempool.AddOp(ctx.UserOp); err != nil {
 		l.Error(err, "eth_sendUserOperation error")
 		return "", err
 	}
@@ -180,21 +147,12 @@ func (i *Client) EstimateUserOperationGas(
 	// Init logger
 	l := i.logger.WithName("eth_estimateUserOperationGas")
 
-	// Check EntryPoint and userOp is valid.
-	//epAddr, err := i.parseEntryPointAddress(ep)
-	//if err != nil {
-	//	l.Error(err, "eth_estimateUserOperationGas error")
-	//	return nil, err
-	//}
-	//l = l.
-	//	WithValues("entrypoint", epAddr.String()).
-	//	WithValues("chain_id", i.chainID.String())
-
 	userOp, err := userop.New(op)
 	if err != nil {
 		l.Error(err, "eth_estimateUserOperationGas error")
 		return nil, err
 	}
+
 	//hash := userOp.GetUserOpHash(epAddr, i.chainID)
 	//l = l.WithValues("userop_hash", hash)
 
@@ -243,27 +201,9 @@ func (i *Client) EstimateUserOperationGas(
 	}, nil
 }
 
-// GetUserOperationReceipt fetches a UserOperation receipt based on a userOpHash returned by
+// GetUserOperationReceipt returns RIP7560 transaction receipt based on a userOp
 // *Client.SendUserOperation.
 func (i *Client) GetUserOperationReceipt(
-	hash string,
-) (*filter.UserOperationReceipt, error) {
-	// Init logger
-	l := i.logger.WithName("eth_getUserOperationReceipt").WithValues("userop_hash", hash)
-
-	ev, err := i.getUserOpReceipt(hash, i.supportedEntryPoints[0], i.opLookupLimit)
-	if err != nil {
-		l.Error(err, "eth_getUserOperationReceipt error")
-		return nil, err
-	}
-
-	l.Info("eth_getUserOperationReceipt ok")
-	return ev, nil
-}
-
-// GetRIP7560UserOperationReceipt returns RIP7560 transaction receipt based on a userOp
-// *Client.SendUserOperation.
-func (i *Client) GetRIP7560UserOperationReceipt(
 	op userOperation,
 ) (*types.Receipt, error) {
 	// Init logger
@@ -275,7 +215,7 @@ func (i *Client) GetRIP7560UserOperationReceipt(
 		return nil, err
 	}
 
-	receipt, err := i.getRip7560UserOpReceipt(txHash, i.opLookupLimit)
+	receipt, err := i.getUserOpReceipt(txHash.String(), i.opLookupLimit)
 	if err != nil {
 		l.Error(err, "getRip7560UserOpReceipt error")
 	}
@@ -284,29 +224,15 @@ func (i *Client) GetRIP7560UserOperationReceipt(
 	return receipt, nil
 }
 
-// GetUserOperationByHash returns a UserOperation based on a given userOpHash returned by
-// *Client.SendUserOperation.
-func (i *Client) GetUserOperationByHash(hash string) (*filter.HashLookupResult, error) {
-	// Init logger
-	l := i.logger.WithName("eth_getUserOperationByHash").WithValues("userop_hash", hash)
-
-	res, err := i.getUserOpByHash(hash, i.supportedEntryPoints[0], i.chainID, i.opLookupLimit)
-	if err != nil {
-		l.Error(err, "eth_getUserOperationByHash error")
-		return nil, err
-	}
-
-	return res, nil
-}
-
 // SupportedEntryPoints implements the method call for eth_supportedEntryPoints. It returns the array of
 // EntryPoint addresses that is supported by the client. The first address in the array is the preferred
 // EntryPoint.
+// TODO : inject static value?
 func (i *Client) SupportedEntryPoints() ([]string, error) {
 	slc := []string{}
-	for _, ep := range i.supportedEntryPoints {
-		slc = append(slc, ep.String())
-	}
+	//for _, ep := range i.supportedEntryPoints {
+	//	slc = append(slc, ep.String())
+	//}
 
 	return slc, nil
 }

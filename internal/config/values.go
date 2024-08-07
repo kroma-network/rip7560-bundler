@@ -18,7 +18,6 @@ type Values struct {
 	EthClientUrl                 string
 	Port                         int
 	DataDirectory                string
-	SupportedEntryPoints         []common.Address
 	MaxVerificationGas           *big.Int
 	MaxBatchGasLimit             *big.Int
 	MaxOpTTL                     time.Duration
@@ -174,7 +173,6 @@ func GetValues() *Values {
 	ethClientUrl := viper.GetString("erc4337_bundler_eth_client_url")
 	port := viper.GetInt("erc4337_bundler_port")
 	dataDirectory := viper.GetString("erc4337_bundler_data_directory")
-	supportedEntryPoints := envArrayToAddressSlice(viper.GetString("erc4337_bundler_supported_entry_points"))
 	nativeBundlerCollectorTracer := viper.GetString("erc4337_bundler_native_bundler_collector_tracer")
 	nativeBundlerExecutorTracer := viper.GetString("erc4337_bundler_native_bundler_executor_tracer")
 	maxVerificationGas := big.NewInt(int64(viper.GetInt("erc4337_bundler_max_verification_gas")))
@@ -197,7 +195,6 @@ func GetValues() *Values {
 		EthClientUrl:                 ethClientUrl,
 		Port:                         port,
 		DataDirectory:                dataDirectory,
-		SupportedEntryPoints:         supportedEntryPoints,
 		NativeBundlerCollectorTracer: nativeBundlerCollectorTracer,
 		NativeBundlerExecutorTracer:  nativeBundlerExecutorTracer,
 		MaxVerificationGas:           maxVerificationGas,
