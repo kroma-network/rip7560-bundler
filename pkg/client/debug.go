@@ -16,14 +16,13 @@ import (
 
 // Debug exposes methods used for testing the bundler. These should not be made available in production.
 type Debug struct {
-	eoa         *signer.EOA
-	eth         *ethclient.Client
-	mempool     *mempool.Mempool
-	rep         *entities.Reputation
-	bundler     *bundler.Bundler
-	chainID     *big.Int
-	entrypoint  common.Address
-	beneficiary common.Address
+	eoa        *signer.EOA
+	eth        *ethclient.Client
+	mempool    *mempool.Mempool
+	rep        *entities.Reputation
+	bundler    *bundler.Bundler
+	chainID    *big.Int
+	entrypoint common.Address
 }
 
 func NewDebug(
@@ -34,9 +33,8 @@ func NewDebug(
 	bundler *bundler.Bundler,
 	chainID *big.Int,
 	entrypoint common.Address,
-	beneficiary common.Address,
 ) *Debug {
-	return &Debug{eoa, eth, mempool, rep, bundler, chainID, entrypoint, beneficiary}
+	return &Debug{eoa, eth, mempool, rep, bundler, chainID, entrypoint}
 }
 
 // ClearState clears the bundler mempool and reputation data of paymasters/accounts/factories/aggregators.

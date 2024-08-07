@@ -90,7 +90,7 @@ func GetValues() *Values {
 	viper.SetDefault("erc4337_bundler_data_directory", "/tmp/stackup_bundler")
 	viper.SetDefault("erc4337_bundler_supported_entry_points", "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789")
 	viper.SetDefault("erc4337_bundler_max_verification_gas", 6000000)
-	// TODO : check max value - erc4337_bundler_max_batch_gas_limit
+	// TODO : adjust args from geth request, deprecate this!
 	viper.SetDefault("erc4337_bundler_max_batch_gas_limit", 18000000)
 	viper.SetDefault("erc4337_bundler_max_op_ttl_seconds", 180)
 	viper.SetDefault("erc4337_bundler_op_lookup_limit", 2000)

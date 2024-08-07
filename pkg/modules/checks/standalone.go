@@ -71,11 +71,13 @@ func (s *Standalone) ValidateOpValues() modules.UserOpHandlerFunc {
 		g := new(errgroup.Group)
 		g.Go(func() error { return ValidateSender(ctx.UserOp, gc) })
 		g.Go(func() error { return ValidateInitCode(ctx.UserOp) })
+		// TODO : is this needed?
 		//g.Go(func() error { return ValidateVerificationGas(ctx.UserOp, s.ov, s.maxVerificationGas) })
-		g.Go(func() error { return ValidatePaymasterAndData(ctx.UserOp, ctx.GetPaymasterDepositInfo(), gc) })
+		// TODO : adjust check staking
+		//g.Go(func() error { return ValidatePaymasterAndData(ctx.UserOp, ctx.GetPaymasterDepositInfo(), gc) })
 		g.Go(func() error { return ValidateFeePerGas(ctx.UserOp, gasprice.GetBaseFeeWithEthClient(s.eth)) })
 		g.Go(func() error { return ValidatePendingOps(ctx.UserOp, ctx.GetPendingSenderOps()) })
-		g.Go(func() error { return ValidateGasAvailable(ctx.UserOp, s.maxBatchGasLimit) })
+		//g.Go(func() error { return ValidateGasAvailable(ctx.UserOp, s.maxBatchGasLimit) })
 
 		if err := g.Wait(); err != nil {
 			return errors.NewRPCError(errors.INVALID_FIELDS, err.Error(), err.Error())
@@ -142,6 +144,7 @@ func (s *Standalone) SimulateOp() modules.UserOpHandlerFunc {
 	}
 }
 
+// TODO : implement scale-out structure
 func (s *Standalone) SimulateRIP7560Op() modules.UserOpHandlerFunc {
 	return func(ctx *modules.UserOpHandlerCtx) error {
 		gc := getCodeWithEthClient(s.eth)
@@ -256,13 +259,6 @@ func (s *Standalone) PaymasterDeposit() modules.BatchHandlerFunc {
 			}
 		}
 
-		return nil
-	}
-}
-
-// TODO: Implement
-func (s *Standalone) SimulateBatch() modules.BatchHandlerFunc {
-	return func(ctx *modules.BatchHandlerCtx) error {
 		return nil
 	}
 }

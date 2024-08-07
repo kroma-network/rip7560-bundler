@@ -9,9 +9,9 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/go-logr/logr"
+	"github.com/stackup-wallet/stackup-bundler/pkg/client"
 	"github.com/stackup-wallet/stackup-bundler/pkg/entrypoint/transaction"
 	"github.com/stackup-wallet/stackup-bundler/pkg/modules"
-	"github.com/stackup-wallet/stackup-bundler/pkg/rip7560client"
 	"github.com/stackup-wallet/stackup-bundler/pkg/signer"
 	"github.com/stackup-wallet/stackup-bundler/pkg/userop"
 )
@@ -72,16 +72,16 @@ func (r *Relayer) SendUserOperationRip7560() modules.BatchHandlerFunc {
 	}
 }
 
-func (r *Relayer) BuildTransactionArgs(batch []*userop.UserOperation) []rip7560client.UserOperationArgs {
-	var transactionArgs []rip7560client.UserOperationArgs
+func (r *Relayer) BuildTransactionArgs(batch []*userop.UserOperation) []client.UserOperationArgs {
+	var transactionArgs []client.UserOperationArgs
 	for _, userOp := range batch {
-		txArgs := rip7560client.CreateUserOperationArgs(userOp)
+		txArgs := client.CreateUserOperationArgs(userOp)
 		transactionArgs = append(transactionArgs, txArgs)
 	}
 	return transactionArgs
 }
 
-func (r *Relayer) sendTransactionBundle(transactionArgs []rip7560client.UserOperationArgs, creationBlock, expectedRevenue *big.Int, bundlerId string) error {
+func (r *Relayer) sendTransactionBundle(transactionArgs []client.UserOperationArgs, creationBlock, expectedRevenue *big.Int, bundlerId string) error {
 	var out any
 	if err := r.rpc.Call(&out, "eth_sendRip7560TransactionsBundle", &transactionArgs, creationBlock, expectedRevenue, bundlerId); err != nil {
 		return err

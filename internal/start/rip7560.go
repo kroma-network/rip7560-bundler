@@ -16,6 +16,7 @@ import (
 	"github.com/stackup-wallet/stackup-bundler/internal/o11y"
 	"github.com/stackup-wallet/stackup-bundler/pkg/altmempools"
 	"github.com/stackup-wallet/stackup-bundler/pkg/bundler"
+	"github.com/stackup-wallet/stackup-bundler/pkg/client"
 	"github.com/stackup-wallet/stackup-bundler/pkg/entrypoint/stake"
 	"github.com/stackup-wallet/stackup-bundler/pkg/jsonrpc"
 	"github.com/stackup-wallet/stackup-bundler/pkg/mempool"
@@ -25,7 +26,6 @@ import (
 	"github.com/stackup-wallet/stackup-bundler/pkg/modules/expire"
 	"github.com/stackup-wallet/stackup-bundler/pkg/modules/gasprice"
 	"github.com/stackup-wallet/stackup-bundler/pkg/modules/relay"
-	"github.com/stackup-wallet/stackup-bundler/pkg/rip7560client"
 	"github.com/stackup-wallet/stackup-bundler/pkg/signer"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 	"go.opentelemetry.io/otel"
@@ -110,24 +110,23 @@ func Rip7560Mode() {
 	rep := entities.New(db, eth, conf.ReputationConstants)
 
 	// Init Client
-	c := rip7560client.New(mem, chain, conf.SupportedEntryPoints, conf.OpLookupLimit)
-	c.SetGetUserOpReceiptFunc(rip7560client.GetUserOpReceiptWithEthClient(eth))
-	c.SetGetRip7560UserOpReceiptFunc(rip7560client.GetRip7560UserOpReceiptWithEthClient(eth))
-	c.SetGetGasPricesFunc(rip7560client.GetGasPricesWithEthClient(eth))
+	c := client.New(mem, chain, conf.SupportedEntryPoints, conf.OpLookupLimit)
+	c.SetGetRip7560UserOpReceiptFunc(client.GetRip7560UserOpReceiptWithEthClient(eth))
+	c.SetGetGasPricesFunc(client.GetGasPricesWithEthClient(eth))
 	c.SetGetGasEstimateFunc(
-		rip7560client.GetGasEstimateWithEthClient(
+		client.GetGasEstimateWithEthClient(
 			rpc,
 			chain,
 			conf.MaxBatchGasLimit,
 			conf.NativeBundlerExecutorTracer,
 		),
 	)
-	c.SetGetUserOpByHashFunc(rip7560client.GetUserOpByHashWithEthClient(eth))
+	c.SetGetUserOpByHashFunc(client.GetUserOpByHashWithEthClient(eth))
 	c.SetGetStakeFunc(stake.GetStakeWithEthClient(eth))
 	c.UseLogger(logr)
 	c.UseModules(
 		rep.CheckStatus(),
-		//rep.ValidateOpLimit(),
+		rep.ValidateOpLimit(),
 		check.ValidateOpValues(),
 		check.SimulateRIP7560Op(),
 		rep.IncOpsSeen(),
@@ -149,27 +148,23 @@ func Rip7560Mode() {
 		gasprice.FilterUnderpriced(),
 		batch.SortByNonce(),
 		batch.MaintainGasLimit(conf.MaxBatchGasLimit),
+
+		// TODO : Is this needed?
 		//check.CodeHashes(),
-		// TODO : Implement
+		// TODO : Is this needed?
 		//check.PaymasterDeposit(),
-		// TODO: Implement
-		check.SimulateBatch(),
+
+		//check.SimulateBatch(),
 		//relayer.SendUserOperation(),
-		relayer.SendUserOperationRip7560(),
+		//relayer.SendUserOperationRip7560(),
 		rep.IncOpsIncluded(),
 		check.Clean(),
 	)
 
-	if !conf.DebugMode {
-		if err := b.Run(); err != nil {
-			log.Fatal(err)
-		}
-	}
-
 	// init Debug
-	var d *rip7560client.Debug
+	var d *client.Debug
 	if conf.DebugMode {
-		d = rip7560client.NewDebug(eoa, eth, mem, rep, b, chain, conf.SupportedEntryPoints[0])
+		d = client.NewDebug(eoa, eth, mem, rep, b, chain, conf.SupportedEntryPoints[0])
 		b.SetMaxBatch(1)
 		relayer.SetWaitTimeout(0)
 	}
@@ -192,7 +187,7 @@ func Rip7560Mode() {
 		g.Status(http.StatusOK)
 	})
 	handlers := []gin.HandlerFunc{
-		jsonrpc.Controller(rip7560client.NewRpcAdapter(c, d)),
+		jsonrpc.Controller(client.NewRpcAdapter(c, b, d)),
 		jsonrpc.WithOTELTracerAttributes(),
 	}
 	r.POST("/", handlers...)

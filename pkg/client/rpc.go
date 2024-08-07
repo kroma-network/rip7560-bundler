@@ -2,6 +2,10 @@ package client
 
 import (
 	"errors"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/stackup-wallet/stackup-bundler/pkg/bundler"
+	types2 "github.com/stackup-wallet/stackup-bundler/pkg/types"
 
 	"github.com/stackup-wallet/stackup-bundler/pkg/entrypoint/filter"
 	"github.com/stackup-wallet/stackup-bundler/pkg/gas"
@@ -15,13 +19,14 @@ type optional_stateOverride map[string]any
 
 // RpcAdapter is an adapter for routing JSON-RPC method calls to the correct client functions.
 type RpcAdapter struct {
-	client *Client
-	debug  *Debug
+	client  *Client
+	bundler *bundler.Bundler
+	debug   *Debug
 }
 
 // NewRpcAdapter initializes a new RpcAdapter which can be used with a JSON-RPC server.
-func NewRpcAdapter(client *Client, debug *Debug) *RpcAdapter {
-	return &RpcAdapter{client, debug}
+func NewRpcAdapter(client *Client, bundler *bundler.Bundler, debug *Debug) *RpcAdapter {
+	return &RpcAdapter{client, bundler, debug}
 }
 
 // Eth_sendUserOperation routes method calls to *Client.SendUserOperation.
@@ -40,9 +45,9 @@ func (r *RpcAdapter) Eth_estimateUserOperationGas(
 
 // Eth_getUserOperationReceipt routes method calls to *Client.GetUserOperationReceipt.
 func (r *RpcAdapter) Eth_getUserOperationReceipt(
-	userOpHash string,
-) (*filter.UserOperationReceipt, error) {
-	return r.client.GetUserOperationReceipt(userOpHash)
+	op userOperation,
+) (*types.Receipt, error) {
+	return r.client.GetRIP7560UserOperationReceipt(op)
 }
 
 // Eth_getUserOperationByHash routes method calls to *Client.GetUserOperationByHash.
@@ -60,6 +65,10 @@ func (r *RpcAdapter) Eth_supportedEntryPoints() ([]string, error) {
 // Eth_chainId routes method calls to *Client.ChainID.
 func (r *RpcAdapter) Eth_chainId() (string, error) {
 	return r.client.ChainID()
+}
+
+func (r *RpcAdapter) Aa_getRip7560Bundle(ep common.Address, args types2.GetRip7560BundleArgs) (*types2.GetRip7560BundleResult, error) {
+	return r.bundler.GetRip7560Bundle(ep, args)
 }
 
 // Debug_bundler_clearState routes method calls to *Debug.ClearState.
