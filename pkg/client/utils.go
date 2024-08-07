@@ -4,7 +4,6 @@ import (
 	"context"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -17,34 +16,19 @@ import (
 
 // GetUserOpReceiptFunc is a general interface for fetching a UserOperationReceipt given a userOpHash,
 // EntryPoint address, and block range.
-type GetUserOpReceiptFunc = func(hash string, ep common.Address, blkRange uint64) (*filter.UserOperationReceipt, error)
-type GetRip7560UserOpReceiptFunc = func(txHash common.Hash, blkRange uint64) (*types.Receipt, error)
+type GetUserOpReceiptFunc = func(txHash string, blkRange uint64) (*types.Receipt, error)
 
 func getUserOpReceiptNoop() GetUserOpReceiptFunc {
-	return func(hash string, ep common.Address, blkRange uint64) (*filter.UserOperationReceipt, error) {
+	return func(txHash string, blkRange uint64) (*types.Receipt, error) {
 		return nil, nil
 	}
 }
 
-func getRip7560UserOpReceiptNoop() GetRip7560UserOpReceiptFunc {
-	return func(txHash common.Hash, blkRange uint64) (*types.Receipt, error) {
-		return nil, nil
-	}
-}
-
-// GetUserOpReceiptWithEthClient returns an implementation of GetUserOpReceiptFunc that relies on an eth
+// GetUserOpReceiptWithEthClient returns an implementation of GetRip7560UserOpReceiptFunc that relies on an eth
 // client to fetch a UserOperationReceipt.
 func GetUserOpReceiptWithEthClient(eth *ethclient.Client) GetUserOpReceiptFunc {
-	return func(hash string, ep common.Address, blkRange uint64) (*filter.UserOperationReceipt, error) {
-		return filter.GetUserOperationReceipt(eth, hash, ep, blkRange)
-	}
-}
-
-// GetRip7560UserOpReceiptWithEthClient returns an implementation of GetRip7560UserOpReceiptFunc that relies on an eth
-// client to fetch a UserOperationReceipt.
-func GetRip7560UserOpReceiptWithEthClient(eth *ethclient.Client) GetRip7560UserOpReceiptFunc {
-	return func(txHash common.Hash, blkRange uint64) (*types.Receipt, error) {
-		return filter.GetRip7560UserOperationReceipt(eth, txHash, blkRange)
+	return func(txHash string, blkRange uint64) (*types.Receipt, error) {
+		return filter.GetUserOperationReceipt(eth, txHash, blkRange)
 	}
 }
 
@@ -71,14 +55,12 @@ func GetGasPricesWithEthClient(eth *ethclient.Client) GetGasPricesFunc {
 // GetGasEstimateFunc is a general interface for fetching an estimate for verificationGasLimit and
 // callGasLimit given a userOp and EntryPoint address.
 type GetGasEstimateFunc = func(
-	ep common.Address,
 	op *userop.UserOperation,
 	sos state.OverrideSet,
 ) (verificationGas uint64, callGas uint64, err error)
 
 func getGasEstimateNoop() GetGasEstimateFunc {
 	return func(
-		ep common.Address,
 		op *userop.UserOperation,
 		sos state.OverrideSet,
 	) (verificationGas uint64, callGas uint64, err error) {
@@ -95,7 +77,6 @@ func GetGasEstimateWithEthClient(
 	tracer string,
 ) GetGasEstimateFunc {
 	return func(
-		ep common.Address,
 		op *userop.UserOperation,
 		sos state.OverrideSet,
 	) (verificationGas uint64, callGas uint64, err error) {
@@ -110,23 +91,5 @@ func GetGasEstimateWithEthClient(
 			return 0, 0, err
 		}
 		return uint64(res.ValidationGas), uint64(res.ExecutionGas), nil
-	}
-}
-
-// GetUserOpByHashFunc is a general interface for fetching a UserOperation given a userOpHash, EntryPoint
-// address, chain ID, and block range.
-type GetUserOpByHashFunc func(hash string, ep common.Address, chain *big.Int, blkRange uint64) (*filter.HashLookupResult, error)
-
-func getUserOpByHashNoop() GetUserOpByHashFunc {
-	return func(hash string, ep common.Address, chain *big.Int, blkRange uint64) (*filter.HashLookupResult, error) {
-		return nil, nil
-	}
-}
-
-// GetUserOpByHashWithEthClient returns an implementation of GetUserOpByHashFunc that relies on an eth client
-// to fetch a UserOperation.
-func GetUserOpByHashWithEthClient(eth *ethclient.Client) GetUserOpByHashFunc {
-	return func(hash string, ep common.Address, chain *big.Int, blkRange uint64) (*filter.HashLookupResult, error) {
-		return filter.GetUserOperationByHash(eth, hash, ep, chain, blkRange)
 	}
 }

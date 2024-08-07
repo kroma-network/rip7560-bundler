@@ -14,14 +14,13 @@ func TestAddOpToMempool(t *testing.T) {
 	db := testutils.DBMock()
 	defer db.Close()
 	mem, _ := New(db)
-	ep := testutils.ValidAddress1
 	op := testutils.MockValidInitUserOp()
 
-	if err := mem.AddOp(ep, op); err != nil {
+	if err := mem.AddOp(op); err != nil {
 		t.Fatalf("got %v, want nil", err)
 	}
 
-	memOps, err := mem.GetOps(ep, op.Sender)
+	memOps, err := mem.GetOps(op.Sender)
 	if err != nil {
 		t.Fatalf("got %v, want nil", err)
 	}
@@ -40,19 +39,18 @@ func TestReplaceOpInMempool(t *testing.T) {
 	db := testutils.DBMock()
 	defer db.Close()
 	mem, _ := New(db)
-	ep := testutils.ValidAddress1
 	op1 := testutils.MockValidInitUserOp()
 	op2 := testutils.MockValidInitUserOp()
 	op2.MaxPriorityFeePerGas = big.NewInt(0).Add(op1.MaxPriorityFeePerGas, common.Big1)
 
-	if err := mem.AddOp(ep, op1); err != nil {
+	if err := mem.AddOp(op1); err != nil {
 		t.Fatalf("got %v, want nil", err)
 	}
-	if err := mem.AddOp(ep, op2); err != nil {
+	if err := mem.AddOp(op2); err != nil {
 		t.Fatalf("got %v, want nil", err)
 	}
 
-	memOps, err := mem.GetOps(ep, op2.Sender)
+	memOps, err := mem.GetOps(op2.Sender)
 	if err != nil {
 		t.Fatalf("got %v, want nil", err)
 	}
@@ -70,18 +68,17 @@ func TestRemoveOpsFromMempool(t *testing.T) {
 	db := testutils.DBMock()
 	defer db.Close()
 	mem, _ := New(db)
-	ep := testutils.ValidAddress1
 	op := testutils.MockValidInitUserOp()
 
-	if err := mem.AddOp(ep, op); err != nil {
+	if err := mem.AddOp(op); err != nil {
 		t.Fatalf("got %v, want nil", err)
 	}
 
-	if err := mem.RemoveOps(ep, op); err != nil {
+	if err := mem.RemoveOps(op); err != nil {
 		t.Fatalf("got %v, want nil", err)
 	}
 
-	memOps, err := mem.GetOps(ep, op.Sender)
+	memOps, err := mem.GetOps(op.Sender)
 	if err != nil {
 		t.Fatalf("got %v, want nil", err)
 	}
@@ -96,7 +93,6 @@ func TestDumpFromMempool(t *testing.T) {
 	db := testutils.DBMock()
 	defer db.Close()
 	mem, _ := New(db)
-	ep := testutils.ValidAddress1
 
 	op1 := testutils.MockValidInitUserOp()
 	op1.MaxFeePerGas = big.NewInt(4)
@@ -112,17 +108,17 @@ func TestDumpFromMempool(t *testing.T) {
 	op3.MaxFeePerGas = big.NewInt(6)
 	op3.MaxPriorityFeePerGas = big.NewInt(1)
 
-	if err := mem.AddOp(ep, op1); err != nil {
+	if err := mem.AddOp(op1); err != nil {
 		t.Fatalf("got %v, want nil", err)
 	}
-	if err := mem.AddOp(ep, op2); err != nil {
+	if err := mem.AddOp(op2); err != nil {
 		t.Fatalf("got %v, want nil", err)
 	}
-	if err := mem.AddOp(ep, op3); err != nil {
+	if err := mem.AddOp(op3); err != nil {
 		t.Fatalf("got %v, want nil", err)
 	}
 
-	if memOps, err := mem.Dump(ep); err != nil {
+	if memOps, err := mem.Dump(); err != nil {
 		t.Fatalf("got %v, want nil", err)
 	} else if len(memOps) != 3 {
 		t.Fatalf("got length %d, want 3", len(memOps))
@@ -141,24 +137,23 @@ func TestNewMempoolLoadsFromDisk(t *testing.T) {
 	db := testutils.DBMock()
 	defer db.Close()
 	mem1, _ := New(db)
-	ep := testutils.ValidAddress1
 	op1 := testutils.MockValidInitUserOp()
 	op2 := testutils.MockValidInitUserOp()
 	op2.Nonce = big.NewInt(0).Add(op1.Nonce, common.Big1)
 	op2.MaxPriorityFeePerGas = big.NewInt(0).Add(op1.MaxPriorityFeePerGas, common.Big1)
 
-	if err := mem1.AddOp(ep, op1); err != nil {
+	if err := mem1.AddOp(op1); err != nil {
 		t.Fatalf("got %v, want nil", err)
 	}
-	if err := mem1.AddOp(ep, op2); err != nil {
+	if err := mem1.AddOp(op2); err != nil {
 		t.Fatalf("got %v, want nil", err)
 	}
-	if err := mem1.RemoveOps(ep, op1); err != nil {
+	if err := mem1.RemoveOps(op1); err != nil {
 		t.Fatalf("got %v, want nil", err)
 	}
 
 	mem2, _ := New(db)
-	memOps, err := mem2.GetOps(ep, op2.Sender)
+	memOps, err := mem2.GetOps(op2.Sender)
 	if err != nil {
 		t.Fatalf("got %v, want nil", err)
 	}

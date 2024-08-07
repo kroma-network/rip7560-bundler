@@ -2,12 +2,10 @@ package client
 
 import (
 	"errors"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/stackup-wallet/stackup-bundler/pkg/bundler"
 	types2 "github.com/stackup-wallet/stackup-bundler/pkg/types"
 
-	"github.com/stackup-wallet/stackup-bundler/pkg/entrypoint/filter"
 	"github.com/stackup-wallet/stackup-bundler/pkg/gas"
 )
 
@@ -30,8 +28,8 @@ func NewRpcAdapter(client *Client, bundler *bundler.Bundler, debug *Debug) *RpcA
 }
 
 // Eth_sendUserOperation routes method calls to *Client.SendUserOperation.
-func (r *RpcAdapter) Eth_sendUserOperation(op userOperation, ep string) (string, error) {
-	return r.client.SendUserOperation(op, ep)
+func (r *RpcAdapter) Eth_sendUserOperation(op userOperation) (string, error) {
+	return r.client.SendUserOperation(op)
 }
 
 // Eth_estimateUserOperationGas routes method calls to *Client.EstimateUserOperationGas.
@@ -47,14 +45,7 @@ func (r *RpcAdapter) Eth_estimateUserOperationGas(
 func (r *RpcAdapter) Eth_getUserOperationReceipt(
 	op userOperation,
 ) (*types.Receipt, error) {
-	return r.client.GetRIP7560UserOperationReceipt(op)
-}
-
-// Eth_getUserOperationByHash routes method calls to *Client.GetUserOperationByHash.
-func (r *RpcAdapter) Eth_getUserOperationByHash(
-	userOpHash string,
-) (*filter.HashLookupResult, error) {
-	return r.client.GetUserOperationByHash(userOpHash)
+	return r.client.GetUserOperationReceipt(op)
 }
 
 // Eth_supportedEntryPoints routes method calls to *Client.SupportedEntryPoints.
@@ -67,8 +58,8 @@ func (r *RpcAdapter) Eth_chainId() (string, error) {
 	return r.client.ChainID()
 }
 
-func (r *RpcAdapter) Aa_getRip7560Bundle(ep common.Address, args types2.GetRip7560BundleArgs) (*types2.GetRip7560BundleResult, error) {
-	return r.bundler.GetRip7560Bundle(ep, args)
+func (r *RpcAdapter) Aa_getRip7560Bundle(args types2.GetRip7560BundleArgs) (*types2.GetRip7560BundleResult, error) {
+	return r.bundler.GetRip7560Bundle(args)
 }
 
 // Debug_bundler_clearState routes method calls to *Debug.ClearState.
@@ -90,22 +81,13 @@ func (r *RpcAdapter) Debug_bundler_dumpMempool(ep string) ([]map[string]any, err
 }
 
 // Debug_bundler_sendBundleNow routes method calls to *Debug.SendBundleNow.
-func (r *RpcAdapter) Debug_bundler_sendBundleNow() (string, error) {
-	if r.debug == nil {
-		return "", errors.New("rpc: debug mode is not enabled")
-	}
-
-	return r.debug.SendBundleNow()
-}
-
-// Debug_bundler_setBundlingMode routes method calls to *Debug.SetBundlingMode.
-func (r *RpcAdapter) Debug_bundler_setBundlingMode(mode string) (string, error) {
-	if r.debug == nil {
-		return "", errors.New("rpc: debug mode is not enabled")
-	}
-
-	return r.debug.SetBundlingMode(mode)
-}
+//func (r *RpcAdapter) Debug_bundler_sendBundleNow() (string, error) {
+//	if r.debug == nil {
+//		return "", errors.New("rpc: debug mode is not enabled")
+//	}
+//
+//	return r.debug.SendBundleNow()
+//}
 
 // Debug_bundler_setReputation routes method calls to *Debug.SetReputation.
 func (r *RpcAdapter) Debug_bundler_setReputation(entries []any, ep string) (string, error) {

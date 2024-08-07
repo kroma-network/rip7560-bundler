@@ -2,11 +2,8 @@ package client
 
 import (
 	"encoding/json"
-	"errors"
-	"fmt"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/stackup-wallet/stackup-bundler/pkg/bundler"
 	"github.com/stackup-wallet/stackup-bundler/pkg/mempool"
@@ -16,13 +13,12 @@ import (
 
 // Debug exposes methods used for testing the bundler. These should not be made available in production.
 type Debug struct {
-	eoa        *signer.EOA
-	eth        *ethclient.Client
-	mempool    *mempool.Mempool
-	rep        *entities.Reputation
-	bundler    *bundler.Bundler
-	chainID    *big.Int
-	entrypoint common.Address
+	eoa     *signer.EOA
+	eth     *ethclient.Client
+	mempool *mempool.Mempool
+	rep     *entities.Reputation
+	bundler *bundler.Bundler
+	chainID *big.Int
 }
 
 func NewDebug(
@@ -32,9 +28,8 @@ func NewDebug(
 	rep *entities.Reputation,
 	bundler *bundler.Bundler,
 	chainID *big.Int,
-	entrypoint common.Address,
 ) *Debug {
-	return &Debug{eoa, eth, mempool, rep, bundler, chainID, entrypoint}
+	return &Debug{eoa, eth, mempool, rep, bundler, chainID}
 }
 
 // ClearState clears the bundler mempool and reputation data of paymasters/accounts/factories/aggregators.
@@ -48,7 +43,7 @@ func (d *Debug) ClearState() (string, error) {
 
 // DumpMempool dumps the current UserOperations mempool in order of arrival.
 func (d *Debug) DumpMempool(ep string) ([]map[string]any, error) {
-	ops, err := d.mempool.Dump(common.HexToAddress(ep))
+	ops, err := d.mempool.Dump()
 	if err != nil {
 		return []map[string]any{}, err
 	}
@@ -72,38 +67,22 @@ func (d *Debug) DumpMempool(ep string) ([]map[string]any, error) {
 }
 
 // SendBundleNow forces the bundler to build and execute a bundle from the mempool as handleOps() transaction.
-func (d *Debug) SendBundleNow() (string, error) {
-	ctx, err := d.bundler.Process(d.entrypoint)
-	if err != nil {
-		return "", err
-	}
-	if ctx == nil {
-		return "", nil
-	}
-
-	hash, ok := ctx.Data["txn_hash"].(string)
-	if !ok {
-		return "", errors.New("txn_hash not in ctx Data")
-	}
-	return hash, nil
-}
-
-// SetBundlingMode allows the bundler to be stopped so that an explicit call to debug_bundler_sendBundleNow is
-// required to send a bundle.
-func (d *Debug) SetBundlingMode(mode string) (string, error) {
-	switch mode {
-	case "manual":
-		d.bundler.Stop()
-	case "auto":
-		if err := d.bundler.Run(); err != nil {
-			return "", err
-		}
-	default:
-		return "", fmt.Errorf("debug: unrecognized mode %s", mode)
-	}
-
-	return "ok", nil
-}
+// TODO : need update
+//func (d *Debug) SendBundleNow() (string, error) {
+//	ctx, err := d.bundler.Process(d.entrypoint)
+//	if err != nil {
+//		return "", err
+//	}
+//	if ctx == nil {
+//		return "", nil
+//	}
+//
+//	hash, ok := ctx.Data["txn_hash"].(string)
+//	if !ok {
+//		return "", errors.New("txn_hash not in ctx Data")
+//	}
+//	return hash, nil
+//}
 
 // SetReputation allows the bundler to set the reputation of given addresses.
 func (d *Debug) SetReputation(entries []any, ep string) (string, error) {

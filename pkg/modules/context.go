@@ -32,7 +32,6 @@ type BatchHandlerCtx struct {
 // NewBatchHandlerContext creates a new BatchHandlerCtx using a copy of the given batch.
 func NewBatchHandlerContext(
 	batch []*userop.UserOperation,
-	entryPoint common.Address,
 	chainID *big.Int,
 	baseFee *big.Int,
 	tip *big.Int,
@@ -44,7 +43,6 @@ func NewBatchHandlerContext(
 	return &BatchHandlerCtx{
 		Batch:          copy,
 		PendingRemoval: []*PendingRemovalItem{},
-		EntryPoint:     entryPoint,
 		ChainID:        chainID,
 		BaseFee:        baseFee,
 		Tip:            tip,
@@ -80,7 +78,6 @@ func (c *BatchHandlerCtx) MarkOpIndexForRemoval(index int, reason string) {
 // process.
 type UserOpHandlerCtx struct {
 	UserOp              *userop.UserOperation
-	EntryPoint          common.Address
 	ChainID             *big.Int
 	pendingSenderOps    []*userop.UserOperation
 	pendingFactoryOps   []*userop.UserOperation
@@ -93,21 +90,20 @@ type UserOpHandlerCtx struct {
 // NewUserOpHandlerContext creates a new UserOpHandlerCtx using a given op.
 func NewUserOpHandlerContext(
 	op *userop.UserOperation,
-	entryPoint common.Address,
 	chainID *big.Int,
 	mem *mempool.Mempool,
 	gs stake.GetStakeFunc,
 ) (*UserOpHandlerCtx, error) {
 	// Fetch any pending UserOperations in the mempool by entity
-	pso, err := mem.GetOps(entryPoint, op.Sender)
+	pso, err := mem.GetOps(op.Sender)
 	if err != nil {
 		return nil, err
 	}
-	pfo, err := mem.GetOps(entryPoint, op.GetFactory())
+	pfo, err := mem.GetOps(op.GetFactory())
 	if err != nil {
 		return nil, err
 	}
-	ppo, err := mem.GetOps(entryPoint, op.GetPaymaster())
+	ppo, err := mem.GetOps(op.GetPaymaster())
 	if err != nil {
 		return nil, err
 	}
@@ -129,7 +125,6 @@ func NewUserOpHandlerContext(
 
 	return &UserOpHandlerCtx{
 		UserOp:              op,
-		EntryPoint:          entryPoint,
 		ChainID:             chainID,
 		pendingSenderOps:    pso,
 		pendingFactoryOps:   pfo,
