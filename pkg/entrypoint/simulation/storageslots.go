@@ -51,7 +51,6 @@ func newStorageSlotsByEntity(stakes EntityStakes, keccak []string) storageSlotsB
 type storageSlotsValidator struct {
 	// Global parameters
 	Op                 *userop.UserOperation
-	EntryPoint         common.Address
 	IsRIP7212Supported bool
 	AltMempools        *altmempools.Directory
 
@@ -108,7 +107,9 @@ func (v *storageSlotsValidator) Process() ([]string, error) {
 	}
 
 	for addr, access := range v.EntityAccessMap {
-		if addr == v.Op.Sender || addr == v.EntryPoint {
+		//if addr == v.Op.Sender || addr == v.EntryPoint {
+		// TODO : adjust entrypoint address
+		if addr == v.Op.Sender {
 			continue
 		}
 

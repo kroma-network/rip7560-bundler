@@ -27,7 +27,7 @@ func (e *ExpireHandler) DropExpired() modules.BatchHandlerFunc {
 	return func(ctx *modules.BatchHandlerCtx) error {
 		end := len(ctx.Batch) - 1
 		for i := end; i >= 0; i-- {
-			hash := ctx.Batch[i].GetUserOpHash(ctx.EntryPoint, ctx.ChainID)
+			hash := ctx.Batch[i].GetUserOpHash(ctx.ChainID)
 			if seenAt, ok := e.seenAt[hash]; !ok {
 				e.seenAt[hash] = time.Now()
 			} else if seenAt.Add(e.ttl).Before(time.Now()) {

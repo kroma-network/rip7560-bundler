@@ -141,7 +141,6 @@ func (i *Client) SendUserOperation(op map[string]any) (string, error) {
 // (e.g. a signature with the correct length).
 func (i *Client) EstimateUserOperationGas(
 	op map[string]any,
-	ep string,
 	os map[string]any,
 ) (*gas.GasEstimates, error) {
 	// Init logger
@@ -192,7 +191,7 @@ func (i *Client) EstimateUserOperationGas(
 
 	l.Info("eth_estimateUserOperationGas ok")
 	return &gas.GasEstimates{
-		PreVerificationGas:   big.NewInt(0), // do not use this
+		PreVerificationGas:   big.NewInt(0), // do not use this (in RIP7560 this is builder fee)
 		VerificationGasLimit: big.NewInt(int64(vg)),
 		CallGasLimit:         big.NewInt(int64(cg)),
 

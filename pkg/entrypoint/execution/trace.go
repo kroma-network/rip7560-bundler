@@ -9,8 +9,6 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/ethclient"
 	ethRpc "github.com/ethereum/go-ethereum/rpc"
 	"github.com/stackup-wallet/stackup-bundler/pkg/entrypoint"
 	"github.com/stackup-wallet/stackup-bundler/pkg/entrypoint/reverts"
@@ -41,41 +39,41 @@ type TraceOutput struct {
 	Event  *entrypoint.EntrypointUserOperationEvent
 }
 
-func parseUserOperationEvent(
-	entryPoint common.Address,
-	ep *entrypoint.Entrypoint,
-	log *tracer.LogInfo,
-) (*entrypoint.EntrypointUserOperationEvent, error) {
-	if log == nil {
-		return nil, nil
-	}
-
-	topics := []common.Hash{}
-	for _, topic := range log.Topics {
-		topics = append(topics, common.HexToHash(topic))
-	}
-	data, err := hexutil.Decode(log.Data)
-	if err != nil {
-		return nil, err
-	}
-
-	ev, err := ep.ParseUserOperationEvent(types.Log{
-		Address: entryPoint,
-		Topics:  topics,
-		Data:    data,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return ev, nil
-}
+//func parseUserOperationEvent(
+//	entryPoint common.Address,
+//	ep *entrypoint.Entrypoint,
+//	log *tracer.LogInfo,
+//) (*entrypoint.EntrypointUserOperationEvent, error) {
+//	if log == nil {
+//		return nil, nil
+//	}
+//
+//	topics := []common.Hash{}
+//	for _, topic := range log.Topics {
+//		topics = append(topics, common.HexToHash(topic))
+//	}
+//	data, err := hexutil.Decode(log.Data)
+//	if err != nil {
+//		return nil, err
+//	}
+//
+//	ev, err := ep.ParseUserOperationEvent(types.Log{
+//		Address: entryPoint,
+//		Topics:  topics,
+//		Data:    data,
+//	})
+//	if err != nil {
+//		return nil, err
+//	}
+//
+//	return ev, nil
+//}
 
 func TraceSimulateHandleOp(in *TraceInput) (*TraceOutput, error) {
-	ep, err := entrypoint.NewEntrypoint(in.EntryPoint, ethclient.NewClient(in.Rpc))
-	if err != nil {
-		return nil, err
-	}
+	//ep, err := entrypoint.NewEntrypoint(in.EntryPoint, ethclient.NewClient(in.Rpc))
+	//if err != nil {
+	//	return nil, err
+	//}
 	auth, err := bind.NewKeyedTransactorWithChainID(utils.DummyPk, in.ChainID)
 	if err != nil {
 		return nil, err

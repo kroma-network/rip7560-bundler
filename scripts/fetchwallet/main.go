@@ -17,7 +17,7 @@ func main() {
 		panic(fmt.Errorf("fatal error config file: %w", err))
 	}
 
-	s, err := signer.New(viper.GetString("erc4337_bundler_private_key"))
+	s, err := signer.New(viper.GetString("rip7560_bundler_private_key"))
 	if err != nil {
 		panic(fmt.Errorf("fatal signer error: %w", err))
 	}

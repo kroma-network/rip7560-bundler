@@ -85,21 +85,19 @@ func variableNotSetOrIsNil(env string) bool {
 // https://docs.stackup.sh/docs/packages/bundler/configure for details.
 func GetValues() *Values {
 	// Default variables
-	viper.SetDefault("erc4337_bundler_port", 4337)
-	viper.SetDefault("erc4337_bundler_data_directory", "/tmp/stackup_bundler")
-	viper.SetDefault("erc4337_bundler_supported_entry_points", "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789")
-	viper.SetDefault("erc4337_bundler_max_verification_gas", 6000000)
+	viper.SetDefault("rip7560_bundler_port", 7560)
+	viper.SetDefault("rip7560_bundler_data_directory", "/tmp/stackup_bundler")
+	viper.SetDefault("rip7560_bundler_supported_entry_points", "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789")
+	viper.SetDefault("rip7560_bundler_max_verification_gas", 6000000)
 	// TODO : adjust args from geth request, deprecate this!
-	viper.SetDefault("erc4337_bundler_max_batch_gas_limit", 18000000)
-	viper.SetDefault("erc4337_bundler_max_op_ttl_seconds", 180)
-	viper.SetDefault("erc4337_bundler_op_lookup_limit", 2000)
-	viper.SetDefault("erc4337_bundler_blocks_in_the_future", 6)
-	viper.SetDefault("erc4337_bundler_otel_insecure_mode", false)
-	viper.SetDefault("erc4337_bundler_is_op_stack_network", false)
-	viper.SetDefault("erc4337_bundler_is_arb_stack_network", false)
-	viper.SetDefault("erc4337_bundler_is_rip7212_supported", true)
-	viper.SetDefault("erc4337_bundler_debug_mode", false)
-	viper.SetDefault("erc4337_bundler_gin_mode", gin.ReleaseMode)
+	viper.SetDefault("rip7560_bundler_max_batch_gas_limit", 18000000)
+	viper.SetDefault("rip7560_bundler_max_op_ttl_seconds", 180)
+	viper.SetDefault("rip7560_bundler_op_lookup_limit", 2000)
+	viper.SetDefault("rip7560_bundler_blocks_in_the_future", 6)
+	viper.SetDefault("rip7560_bundler_otel_insecure_mode", false)
+	viper.SetDefault("rip7560_bundler_is_rip7212_supported", true)
+	viper.SetDefault("rip7560_bundler_debug_mode", false)
+	viper.SetDefault("rip7560_bundler_gin_mode", gin.ReleaseMode)
 
 	// Read in from .env file if available
 	viper.SetConfigName(".env")
@@ -115,81 +113,79 @@ func GetValues() *Values {
 	}
 
 	// Read in from environment variables
-	_ = viper.BindEnv("erc4337_bundler_eth_client_url")
-	_ = viper.BindEnv("erc4337_bundler_private_key")
-	_ = viper.BindEnv("erc4337_bundler_port")
-	_ = viper.BindEnv("erc4337_bundler_data_directory")
-	_ = viper.BindEnv("erc4337_bundler_supported_entry_points")
-	_ = viper.BindEnv("erc4337_bundler_native_bundler_collector_tracer")
-	_ = viper.BindEnv("erc4337_bundler_native_bundler_executor_tracer")
-	_ = viper.BindEnv("erc4337_bundler_max_verification_gas")
-	_ = viper.BindEnv("erc4337_bundler_max_batch_gas_limit")
-	_ = viper.BindEnv("erc4337_bundler_max_op_ttl_seconds")
-	_ = viper.BindEnv("erc4337_bundler_op_lookup_limit")
-	_ = viper.BindEnv("erc4337_bundler_eth_builder_urls")
-	_ = viper.BindEnv("erc4337_bundler_blocks_in_the_future")
-	_ = viper.BindEnv("erc4337_bundler_otel_service_name")
-	_ = viper.BindEnv("erc4337_bundler_otel_collector_headers")
-	_ = viper.BindEnv("erc4337_bundler_otel_collector_url")
-	_ = viper.BindEnv("erc4337_bundler_otel_insecure_mode")
-	_ = viper.BindEnv("erc4337_bundler_alt_mempool_ipfs_gateway")
-	_ = viper.BindEnv("erc4337_bundler_alt_mempool_ids")
-	_ = viper.BindEnv("erc4337_bundler_is_op_stack_network")
-	_ = viper.BindEnv("erc4337_bundler_is_arb_stack_network")
-	_ = viper.BindEnv("erc4337_bundler_is_rip7212_supported")
-	_ = viper.BindEnv("erc4337_bundler_debug_mode")
-	_ = viper.BindEnv("erc4337_bundler_gin_mode")
+	_ = viper.BindEnv("rip7560_bundler_eth_client_url")
+	_ = viper.BindEnv("rip7560_bundler_private_key")
+	_ = viper.BindEnv("rip7560_bundler_port")
+	_ = viper.BindEnv("rip7560_bundler_data_directory")
+	_ = viper.BindEnv("rip7560_bundler_supported_entry_points")
+	_ = viper.BindEnv("rip7560_bundler_native_bundler_collector_tracer")
+	_ = viper.BindEnv("rip7560_bundler_native_bundler_executor_tracer")
+	_ = viper.BindEnv("rip7560_bundler_max_verification_gas")
+	_ = viper.BindEnv("rip7560_bundler_max_batch_gas_limit")
+	_ = viper.BindEnv("rip7560_bundler_max_op_ttl_seconds")
+	_ = viper.BindEnv("rip7560_bundler_op_lookup_limit")
+	_ = viper.BindEnv("rip7560_bundler_eth_builder_urls")
+	_ = viper.BindEnv("rip7560_bundler_blocks_in_the_future")
+	_ = viper.BindEnv("rip7560_bundler_otel_service_name")
+	_ = viper.BindEnv("rip7560_bundler_otel_collector_headers")
+	_ = viper.BindEnv("rip7560_bundler_otel_collector_url")
+	_ = viper.BindEnv("rip7560_bundler_otel_insecure_mode")
+	_ = viper.BindEnv("rip7560_bundler_alt_mempool_ipfs_gateway")
+	_ = viper.BindEnv("rip7560_bundler_alt_mempool_ids")
+	_ = viper.BindEnv("rip7560_bundler_is_rip7212_supported")
+	_ = viper.BindEnv("rip7560_bundler_debug_mode")
+	_ = viper.BindEnv("rip7560_bundler_gin_mode")
 
 	// Validate required variables
-	if variableNotSetOrIsNil("erc4337_bundler_eth_client_url") {
-		panic("Fatal config error: erc4337_bundler_eth_client_url not set")
+	if variableNotSetOrIsNil("rip7560_bundler_eth_client_url") {
+		panic("Fatal config error: rip7560_bundler_eth_client_url not set")
 	}
 
-	if variableNotSetOrIsNil("erc4337_bundler_private_key") {
-		panic("Fatal config error: erc4337_bundler_private_key not set")
+	if variableNotSetOrIsNil("rip7560_bundler_private_key") {
+		panic("Fatal config error: rip7560_bundler_private_key not set")
 	}
 
 	switch viper.GetString("mode") {
 	case "searcher":
-		if variableNotSetOrIsNil("erc4337_bundler_eth_builder_urls") {
-			panic("Fatal config error: erc4337_bundler_eth_builder_urls not set")
+		if variableNotSetOrIsNil("rip7560_bundler_eth_builder_urls") {
+			panic("Fatal config error: rip7560_bundler_eth_builder_urls not set")
 		}
 	}
 
 	// Validate O11Y variables
-	if viper.IsSet("erc4337_bundler_otel_service_name") &&
-		variableNotSetOrIsNil("erc4337_bundler_otel_collector_url") {
-		panic("Fatal config error: erc4337_bundler_otel_service_name is set without a collector URL")
+	if viper.IsSet("rip7560_bundler_otel_service_name") &&
+		variableNotSetOrIsNil("rip7560_bundler_otel_collector_url") {
+		panic("Fatal config error: rip7560_bundler_otel_service_name is set without a collector URL")
 	}
 
 	// Validate Alternative mempool variables
-	if viper.IsSet("erc4337_bundler_alt_mempool_ids") &&
-		variableNotSetOrIsNil("erc4337_bundler_alt_mempool_ipfs_gateway") {
-		panic("Fatal config error: erc4337_bundler_alt_mempool_ids is set without specifying an IPFS gateway")
+	if viper.IsSet("rip7560_bundler_alt_mempool_ids") &&
+		variableNotSetOrIsNil("rip7560_bundler_alt_mempool_ipfs_gateway") {
+		panic("Fatal config error: rip7560_bundler_alt_mempool_ids is set without specifying an IPFS gateway")
 	}
 
 	// Return Values
-	privateKey := viper.GetString("erc4337_bundler_private_key")
-	ethClientUrl := viper.GetString("erc4337_bundler_eth_client_url")
-	port := viper.GetInt("erc4337_bundler_port")
-	dataDirectory := viper.GetString("erc4337_bundler_data_directory")
-	nativeBundlerCollectorTracer := viper.GetString("erc4337_bundler_native_bundler_collector_tracer")
-	nativeBundlerExecutorTracer := viper.GetString("erc4337_bundler_native_bundler_executor_tracer")
-	maxVerificationGas := big.NewInt(int64(viper.GetInt("erc4337_bundler_max_verification_gas")))
-	maxBatchGasLimit := big.NewInt(int64(viper.GetInt("erc4337_bundler_max_batch_gas_limit")))
-	maxOpTTL := time.Second * viper.GetDuration("erc4337_bundler_max_op_ttl_seconds")
-	opLookupLimit := viper.GetUint64("erc4337_bundler_op_lookup_limit")
-	ethBuilderUrls := envArrayToStringSlice(viper.GetString("erc4337_bundler_eth_builder_urls"))
-	blocksInTheFuture := viper.GetInt("erc4337_bundler_blocks_in_the_future")
-	otelServiceName := viper.GetString("erc4337_bundler_otel_service_name")
-	otelCollectorHeader := envKeyValStringToMap(viper.GetString("erc4337_bundler_otel_collector_headers"))
-	otelCollectorUrl := viper.GetString("erc4337_bundler_otel_collector_url")
-	otelInsecureMode := viper.GetBool("erc4337_bundler_otel_insecure_mode")
-	altMempoolIPFSGateway := viper.GetString("erc4337_bundler_alt_mempool_ipfs_gateway")
-	altMempoolIds := envArrayToStringSlice(viper.GetString("erc4337_bundler_alt_mempool_ids"))
-	isRIP7212Supported := viper.GetBool("erc4337_bundler_is_rip7212_supported")
-	debugMode := viper.GetBool("erc4337_bundler_debug_mode")
-	ginMode := viper.GetString("erc4337_bundler_gin_mode")
+	privateKey := viper.GetString("rip7560_bundler_private_key")
+	ethClientUrl := viper.GetString("rip7560_bundler_eth_client_url")
+	port := viper.GetInt("rip7560_bundler_port")
+	dataDirectory := viper.GetString("rip7560_bundler_data_directory")
+	nativeBundlerCollectorTracer := viper.GetString("rip7560_bundler_native_bundler_collector_tracer")
+	nativeBundlerExecutorTracer := viper.GetString("rip7560_bundler_native_bundler_executor_tracer")
+	maxVerificationGas := big.NewInt(int64(viper.GetInt("rip7560_bundler_max_verification_gas")))
+	maxBatchGasLimit := big.NewInt(int64(viper.GetInt("rip7560_bundler_max_batch_gas_limit")))
+	maxOpTTL := time.Second * viper.GetDuration("rip7560_bundler_max_op_ttl_seconds")
+	opLookupLimit := viper.GetUint64("rip7560_bundler_op_lookup_limit")
+	ethBuilderUrls := envArrayToStringSlice(viper.GetString("rip7560_bundler_eth_builder_urls"))
+	blocksInTheFuture := viper.GetInt("rip7560_bundler_blocks_in_the_future")
+	otelServiceName := viper.GetString("rip7560_bundler_otel_service_name")
+	otelCollectorHeader := envKeyValStringToMap(viper.GetString("rip7560_bundler_otel_collector_headers"))
+	otelCollectorUrl := viper.GetString("rip7560_bundler_otel_collector_url")
+	otelInsecureMode := viper.GetBool("rip7560_bundler_otel_insecure_mode")
+	altMempoolIPFSGateway := viper.GetString("rip7560_bundler_alt_mempool_ipfs_gateway")
+	altMempoolIds := envArrayToStringSlice(viper.GetString("rip7560_bundler_alt_mempool_ids"))
+	isRIP7212Supported := viper.GetBool("rip7560_bundler_is_rip7212_supported")
+	debugMode := viper.GetBool("rip7560_bundler_debug_mode")
+	ginMode := viper.GetString("rip7560_bundler_gin_mode")
 	return &Values{
 		PrivateKey:                   privateKey,
 		EthClientUrl:                 ethClientUrl,

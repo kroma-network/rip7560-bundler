@@ -127,7 +127,7 @@ func Rip7560Mode() {
 		rep.CheckStatus(),
 		rep.ValidateOpLimit(),
 		check.ValidateOpValues(),
-		check.SimulateRIP7560Op(),
+		check.SimulateOp(),
 		rep.IncOpsSeen(),
 	)
 
@@ -145,7 +145,8 @@ func Rip7560Mode() {
 		gasprice.SortByGasPrice(),
 		gasprice.FilterUnderpriced(),
 		batch.SortByNonce(),
-		batch.MaintainGasLimit(conf.MaxBatchGasLimit),
+		// TODO : Is this needed?
+		//batch.MaintainGasLimit(conf.MaxBatchGasLimit),
 
 		// TODO : Is this needed?
 		//check.CodeHashes(),

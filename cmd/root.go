@@ -8,8 +8,8 @@ import (
 
 var rootCmd = &cobra.Command{
 	Use:   "stackup-bundler",
-	Short: "ERC-4337 Bundler",
-	Long:  "A modular Go implementation of an ERC-4337 Bundler.",
+	Short: "RIP-7560 Bundler",
+	Long:  "A modular Go implementation of an RIP-7560 Bundler.",
 }
 
 func Execute() {
