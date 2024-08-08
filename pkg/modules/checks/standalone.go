@@ -71,8 +71,6 @@ func (s *Standalone) ValidateOpValues() modules.UserOpHandlerFunc {
 		g := new(errgroup.Group)
 		g.Go(func() error { return ValidateSender(ctx.UserOp, gc) })
 		g.Go(func() error { return ValidateInitCode(ctx.UserOp) })
-		// TODO : is this needed?
-		//g.Go(func() error { return ValidateVerificationGas(ctx.UserOp, s.ov, s.maxVerificationGas) })
 		// TODO : adjust check staking
 		//g.Go(func() error { return ValidatePaymasterAndData(ctx.UserOp, ctx.GetPaymasterDepositInfo(), gc) })
 		g.Go(func() error { return ValidateFeePerGas(ctx.UserOp, gasprice.GetBaseFeeWithEthClient(s.eth)) })
@@ -86,71 +84,13 @@ func (s *Standalone) ValidateOpValues() modules.UserOpHandlerFunc {
 	}
 }
 
-// SimulateOp returns a UserOpHandler that runs through simulation of new UserOps with the EntryPoint.
+// TODO : implement scale-out structure
 func (s *Standalone) SimulateOp() modules.UserOpHandlerFunc {
 	return func(ctx *modules.UserOpHandlerCtx) error {
 		gc := getCodeWithEthClient(s.eth)
 		g := new(errgroup.Group)
 		g.Go(func() error {
-			sim, err := simulation.SimulateValidation(s.rpc, ctx.EntryPoint, ctx.UserOp)
-
-			if err != nil {
-				return errors.NewRPCError(errors.REJECTED_BY_EP_OR_ACCOUNT, err.Error(), err.Error())
-			}
-			if sim.ReturnInfo.SigFailed {
-				return errors.NewRPCError(
-					errors.INVALID_SIGNATURE,
-					"Invalid UserOp signature or paymaster signature",
-					nil,
-				)
-			}
-			if sim.ReturnInfo.ValidUntil.Cmp(common.Big0) != 0 &&
-				time.Now().Unix() >= sim.ReturnInfo.ValidUntil.Int64()-30 {
-				return errors.NewRPCError(
-					errors.SHORT_DEADLINE,
-					"expires too soon",
-					nil,
-				)
-			}
-			return nil
-		})
-		g.Go(func() error {
-			out, err := simulation.TraceSimulateValidation(&simulation.TraceInput{
-				Rpc:                s.rpc,
-				EntryPoint:         ctx.EntryPoint,
-				AltMempools:        s.alt,
-				Op:                 ctx.UserOp,
-				ChainID:            ctx.ChainID,
-				IsRIP7212Supported: s.isRIP7212Supported,
-				Tracer:             s.tracer,
-				Stakes: simulation.EntityStakes{
-					ctx.UserOp.Sender:         ctx.GetSenderDepositInfo(),
-					ctx.UserOp.GetFactory():   ctx.GetFactoryDepositInfo(),
-					ctx.UserOp.GetPaymaster(): ctx.GetPaymasterDepositInfo(),
-				},
-			})
-			if err != nil {
-				return errors.NewRPCError(errors.BANNED_OPCODE, err.Error(), err.Error())
-			}
-
-			ch, err := getCodeHashes(out.TouchedContracts, gc)
-			if err != nil {
-				return errors.NewRPCError(errors.BANNED_OPCODE, err.Error(), err.Error())
-			}
-			return saveCodeHashes(s.db, ctx.UserOp.GetUserOpHash(ctx.EntryPoint, ctx.ChainID), ch)
-		})
-
-		return g.Wait()
-	}
-}
-
-// TODO : implement scale-out structure
-func (s *Standalone) SimulateRIP7560Op() modules.UserOpHandlerFunc {
-	return func(ctx *modules.UserOpHandlerCtx) error {
-		gc := getCodeWithEthClient(s.eth)
-		g := new(errgroup.Group)
-		g.Go(func() error {
-			sim, err := simulation.SimulateRIP7560Validation(s.rpc, ctx.UserOp)
+			sim, err := simulation.SimulateValidation(s.rpc, ctx.UserOp)
 
 			if err != nil {
 				return errors.NewRPCError(errors.REJECTED_BY_EP_OR_ACCOUNT, err.Error(), err.Error())
@@ -173,9 +113,8 @@ func (s *Standalone) SimulateRIP7560Op() modules.UserOpHandlerFunc {
 			return nil
 		})
 		g.Go(func() error {
-			out, err := simulation.TraceSimulateRIP7560Validation(&simulation.TraceInput{
+			out, err := simulation.TraceSimulateValidation(&simulation.TraceInput{
 				Rpc:                s.rpc,
-				EntryPoint:         ctx.EntryPoint,
 				AltMempools:        s.alt,
 				Op:                 ctx.UserOp,
 				ChainID:            ctx.ChainID,
@@ -195,7 +134,7 @@ func (s *Standalone) SimulateRIP7560Op() modules.UserOpHandlerFunc {
 			if err != nil {
 				return errors.NewRPCError(errors.BANNED_OPCODE, err.Error(), err.Error())
 			}
-			return saveCodeHashes(s.db, ctx.UserOp.GetUserOpHash(ctx.EntryPoint, ctx.ChainID), ch)
+			return saveCodeHashes(s.db, ctx.UserOp.GetUserOpHash(ctx.ChainID), ch)
 		})
 
 		return g.Wait()
@@ -211,7 +150,7 @@ func (s *Standalone) CodeHashes() modules.BatchHandlerFunc {
 		end := len(ctx.Batch) - 1
 		for i := end; i >= 0; i-- {
 			op := ctx.Batch[i]
-			chs, err := getSavedCodeHashes(s.db, op.GetUserOpHash(ctx.EntryPoint, ctx.ChainID))
+			chs, err := getSavedCodeHashes(s.db, op.GetUserOpHash(ctx.ChainID))
 			if err != nil {
 				return err
 			}
@@ -273,7 +212,7 @@ func (s *Standalone) Clean() modules.BatchHandlerFunc {
 		}
 		hashes := []common.Hash{}
 		for _, op := range all {
-			hashes = append(hashes, op.GetUserOpHash(ctx.EntryPoint, ctx.ChainID))
+			hashes = append(hashes, op.GetUserOpHash(ctx.ChainID))
 		}
 
 		return removeSavedCodeHashes(s.db, hashes...)

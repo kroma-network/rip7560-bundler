@@ -35,10 +35,9 @@ func (r *RpcAdapter) Eth_sendUserOperation(op userOperation) (string, error) {
 // Eth_estimateUserOperationGas routes method calls to *Client.EstimateUserOperationGas.
 func (r *RpcAdapter) Eth_estimateUserOperationGas(
 	op userOperation,
-	ep string,
 	os optional_stateOverride,
 ) (*gas.GasEstimates, error) {
-	return r.client.EstimateUserOperationGas(op, ep, os)
+	return r.client.EstimateUserOperationGas(op, os)
 }
 
 // Eth_getUserOperationReceipt routes method calls to *Client.GetUserOperationReceipt.
