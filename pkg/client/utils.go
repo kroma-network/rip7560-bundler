@@ -2,33 +2,34 @@ package client
 
 import (
 	"context"
+	"encoding/json"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
-	"github.com/stackup-wallet/stackup-bundler/pkg/entrypoint/filter"
 	"github.com/stackup-wallet/stackup-bundler/pkg/fees"
+	"github.com/stackup-wallet/stackup-bundler/pkg/rip7560/filter"
+	"github.com/stackup-wallet/stackup-bundler/pkg/rip7560/transaction"
 	"github.com/stackup-wallet/stackup-bundler/pkg/state"
-	"github.com/stackup-wallet/stackup-bundler/pkg/userop"
 )
 
-// GetUserOpReceiptFunc is a general interface for fetching a UserOperationReceipt given a userOpHash,
+// GetRip7560TxReceiptFunc is a general interface for fetching a UserOperationReceipt given a userOpHash,
 // EntryPoint address, and block range.
-type GetUserOpReceiptFunc = func(txHash string, blkRange uint64) (*types.Receipt, error)
+type GetRip7560TxReceiptFunc = func(txHash string, blkRange uint64) (*types.Receipt, error)
 
-func getUserOpReceiptNoop() GetUserOpReceiptFunc {
+func getRip7560TxReceiptNoop() GetRip7560TxReceiptFunc {
 	return func(txHash string, blkRange uint64) (*types.Receipt, error) {
 		return nil, nil
 	}
 }
 
-// GetUserOpReceiptWithEthClient returns an implementation of GetRip7560UserOpReceiptFunc that relies on an eth
+// GetRip7560TransactionReceiptWithEthClient returns an implementation of GetRip7560UserOpReceiptFunc that relies on an eth
 // client to fetch a UserOperationReceipt.
-func GetUserOpReceiptWithEthClient(eth *ethclient.Client) GetUserOpReceiptFunc {
+func GetRip7560TransactionReceiptWithEthClient(eth *ethclient.Client) GetRip7560TxReceiptFunc {
 	return func(txHash string, blkRange uint64) (*types.Receipt, error) {
-		return filter.GetUserOperationReceipt(eth, txHash, blkRange)
+		return filter.GetRip7560TransactionReceipt(eth, txHash, blkRange)
 	}
 }
 
@@ -55,13 +56,13 @@ func GetGasPricesWithEthClient(eth *ethclient.Client) GetGasPricesFunc {
 // GetGasEstimateFunc is a general interface for fetching an estimate for verificationGasLimit and
 // callGasLimit given a userOp and EntryPoint address.
 type GetGasEstimateFunc = func(
-	op *userop.UserOperation,
+	aaTxArgs *transaction.TransactionArgs,
 	sos state.OverrideSet,
 ) (verificationGas uint64, callGas uint64, err error)
 
 func getGasEstimateNoop() GetGasEstimateFunc {
 	return func(
-		op *userop.UserOperation,
+		aaTxArgs *transaction.TransactionArgs,
 		sos state.OverrideSet,
 	) (verificationGas uint64, callGas uint64, err error) {
 		return 0, 0, nil
@@ -74,22 +75,34 @@ func GetGasEstimateWithEthClient(
 	rpc *rpc.Client,
 	chain *big.Int,
 	maxGasLimit *big.Int,
-	tracer string,
 ) GetGasEstimateFunc {
 	return func(
-		op *userop.UserOperation,
+		aaTxArgs *transaction.TransactionArgs,
 		sos state.OverrideSet,
 	) (verificationGas uint64, callGas uint64, err error) {
+		// same as ethapi/rip7560api/Rip7560UsedGas
 		type Rip7560UsedGas struct {
 			ValidationGas hexutil.Uint64 `json:"validationGas"`
 			ExecutionGas  hexutil.Uint64 `json:"executionGas"`
 		}
 
 		var res Rip7560UsedGas
-		req := CreateUserOperationArgs(op)
-		if err := rpc.CallContext(context.Background(), &res, "eth_estimateRip7560TransactionGas", &req, "latest", sos); err != nil {
+		if err := rpc.CallContext(context.Background(), &res, "eth_estimateRip7560TransactionGas", aaTxArgs, "latest", sos); err != nil {
 			return 0, 0, err
 		}
 		return uint64(res.ValidationGas), uint64(res.ExecutionGas), nil
 	}
+}
+
+func MapToTransactionArgs(input map[string]interface{}) (transaction.TransactionArgs, error) {
+	var txArgs transaction.TransactionArgs
+	data, err := json.Marshal(input)
+	if err != nil {
+		return txArgs, err
+	}
+	err = json.Unmarshal(data, &txArgs)
+	if err != nil {
+		return txArgs, err
+	}
+	return txArgs, nil
 }

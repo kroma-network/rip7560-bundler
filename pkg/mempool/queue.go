@@ -2,17 +2,16 @@ package mempool
 
 import (
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/stackup-wallet/stackup-bundler/pkg/userop"
+	"github.com/stackup-wallet/stackup-bundler/pkg/rip7560/transaction"
 	"github.com/wangjia184/sortedset"
 )
 
-// TODO : renaming userOp to aaTx
-type userOpQueues struct {
+type rip7560TxQueues struct {
 	all      *sortedset.SortedSet
 	entities map[common.Address]*sortedset.SortedSet
 }
 
-func (q *userOpQueues) getEntitiesSortedSet(entity common.Address) *sortedset.SortedSet {
+func (q *rip7560TxQueues) getEntitiesSortedSet(entity common.Address) *sortedset.SortedSet {
 	if _, ok := q.entities[entity]; !ok {
 		q.entities[entity] = sortedset.New()
 	}
@@ -20,52 +19,57 @@ func (q *userOpQueues) getEntitiesSortedSet(entity common.Address) *sortedset.So
 	return q.entities[entity]
 }
 
-func (q *userOpQueues) AddOp(op *userop.UserOperation) {
-	key := string(getUniqueKey(op.Sender, op.Nonce))
+func (q *rip7560TxQueues) AddTx(tx *transaction.TransactionArgs) {
+	rip7560Tx := tx.ToTransaction().Rip7560TransactionData()
+	key := string(getUniqueKey(tx.GetSender(), tx.BigNonce))
 
-	q.all.AddOrUpdate(key, sortedset.SCORE(q.all.GetCount()), op)
-	q.getEntitiesSortedSet(op.Sender).AddOrUpdate(key, sortedset.SCORE(op.Nonce.Int64()), op)
-	if factory := op.GetFactory(); factory != common.HexToAddress("0x") {
-		fss := q.getEntitiesSortedSet(factory)
-		fss.AddOrUpdate(key, sortedset.SCORE(fss.GetCount()), op)
+	q.all.AddOrUpdate(key, sortedset.SCORE(q.all.GetCount()), tx)
+	q.getEntitiesSortedSet(*rip7560Tx.Sender).AddOrUpdate(key, sortedset.SCORE(int64(rip7560Tx.Nonce)), tx)
+	if deployer := tx.GetDeployer(); deployer != common.HexToAddress("0x") {
+		fss := q.getEntitiesSortedSet(deployer)
+		fss.AddOrUpdate(key, sortedset.SCORE(fss.GetCount()), tx)
 	}
-	if paymaster := op.GetPaymaster(); paymaster != common.HexToAddress("0x") {
+	if paymaster := tx.GetPaymaster(); paymaster != common.HexToAddress("0x") {
 		pss := q.getEntitiesSortedSet(paymaster)
-		pss.AddOrUpdate(key, sortedset.SCORE(pss.GetCount()), op)
+		pss.AddOrUpdate(key, sortedset.SCORE(pss.GetCount()), tx)
 	}
 }
 
-func (q *userOpQueues) GetOps(entity common.Address) []*userop.UserOperation {
+func (q *rip7560TxQueues) GetTxs(entity common.Address) []*transaction.TransactionArgs {
 	ess := q.getEntitiesSortedSet(entity)
 	nodes := ess.GetByRankRange(-1, -ess.GetCount(), false)
-	var batch []*userop.UserOperation
+	var batch []*transaction.TransactionArgs
 	for _, n := range nodes {
-		batch = append(batch, n.Value.(*userop.UserOperation))
+		batch = append(batch, n.Value.(*transaction.TransactionArgs))
 	}
 
 	return batch
 }
 
-func (q *userOpQueues) All() []*userop.UserOperation {
+func (q *rip7560TxQueues) All() []*transaction.TransactionArgs {
 	nodes := q.all.GetByRankRange(1, -1, false)
-	var batch []*userop.UserOperation
+	batch := []*transaction.TransactionArgs{}
 	for _, n := range nodes {
-		batch = append(batch, n.Value.(*userop.UserOperation))
+		batch = append(batch, n.Value.(*transaction.TransactionArgs))
 	}
 
 	return batch
 }
 
-func (q *userOpQueues) RemoveOps(ops ...*userop.UserOperation) {
-	for _, op := range ops {
-		key := string(getUniqueKey(op.Sender, op.Nonce))
+func (q *rip7560TxQueues) RemoveTxs(txArgsList ...*transaction.TransactionArgs) {
+
+	for _, txArgs := range txArgsList {
+		key := string(getUniqueKey(txArgs.GetSender(), txArgs.BigNonce))
 		q.all.Remove(key)
-		q.getEntitiesSortedSet(op.Sender).Remove(key)
-		q.getEntitiesSortedSet(op.GetFactory()).Remove(key)
-		q.getEntitiesSortedSet(op.GetPaymaster()).Remove(key)
+		q.getEntitiesSortedSet(txArgs.GetSender()).Remove(key)
+		q.getEntitiesSortedSet(txArgs.GetDeployer()).Remove(key)
+		q.getEntitiesSortedSet(txArgs.GetPaymaster()).Remove(key)
 	}
 }
 
-func newUserOpQueue() *userOpQueues {
-	return &userOpQueues{}
+func newRip7560TxQueue() *rip7560TxQueues {
+	return &rip7560TxQueues{
+		all:      sortedset.New(),
+		entities: make(map[common.Address]*sortedset.SortedSet),
+	}
 }

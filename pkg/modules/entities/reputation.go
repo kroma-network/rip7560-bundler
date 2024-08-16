@@ -32,45 +32,45 @@ func New(db *badger.DB, eth *ethclient.Client, repConst *ReputationConstants) *R
 //  2. throttled: No new ops from the entity is allowed if one already exists. And it can only stays in
 //     the pool for 10 blocks
 //  3. banned: No ops from the entity is allowed
-func (r *Reputation) CheckStatus() modules.UserOpHandlerFunc {
-	return func(ctx *modules.UserOpHandlerCtx) error {
+func (r *Reputation) CheckStatus() modules.Rip7560TxHandlerFunc {
+	return func(ctx *modules.TxHandlerCtx) error {
 		return r.db.Update(func(txn *badger.Txn) error {
-			if status, err := getStatus(txn, ctx.UserOp.Sender, r.repConst); err != nil {
+			if status, err := getStatus(txn, ctx.GetSender(), r.repConst); err != nil {
 				return err
 			} else if status == banned {
 				return errors.NewRPCError(
 					errors.BANNED_OR_THROTTLED_ENTITY,
-					fmt.Sprintf("banned entity: %s", ctx.UserOp.Sender.Hex()),
+					fmt.Sprintf("banned entity: %s", ctx.GetSender().Hex()),
 					nil,
 				)
-			} else if status == throttled && len(ctx.GetPendingSenderOps()) == r.repConst.ThrottledEntityMempoolCount {
+			} else if status == throttled && len(ctx.GetPendingSenderTxs()) == r.repConst.ThrottledEntityMempoolCount {
 				return errors.NewRPCError(
 					errors.BANNED_OR_THROTTLED_ENTITY,
-					fmt.Sprintf("throttled entity: %s", ctx.UserOp.Sender.Hex()),
+					fmt.Sprintf("throttled entity: %s", ctx.GetSender().Hex()),
 					nil,
 				)
 			}
 
-			factory := ctx.UserOp.GetFactory()
-			if factory != common.HexToAddress("0x") {
-				if status, err := getStatus(txn, factory, r.repConst); err != nil {
+			deployer := ctx.GetDeployer()
+			if deployer != common.HexToAddress("0x") {
+				if status, err := getStatus(txn, deployer, r.repConst); err != nil {
 					return err
 				} else if status == banned {
 					return errors.NewRPCError(
 						errors.BANNED_OR_THROTTLED_ENTITY,
-						fmt.Sprintf("banned entity: %s", factory.Hex()),
+						fmt.Sprintf("banned entity: %s", deployer.Hex()),
 						nil,
 					)
-				} else if status == throttled && len(ctx.GetPendingFactoryOps()) == r.repConst.ThrottledEntityMempoolCount {
+				} else if status == throttled && len(ctx.GetPendingFactoryTxs()) == r.repConst.ThrottledEntityMempoolCount {
 					return errors.NewRPCError(
 						errors.BANNED_OR_THROTTLED_ENTITY,
-						fmt.Sprintf("throttled entity: %s", factory.Hex()),
+						fmt.Sprintf("throttled entity: %s", deployer.Hex()),
 						nil,
 					)
 				}
 			}
 
-			paymaster := ctx.UserOp.GetPaymaster()
+			paymaster := ctx.GetPaymaster()
 			if paymaster != common.HexToAddress("0x") {
 				if status, err := getStatus(txn, paymaster, r.repConst); err != nil {
 					return err
@@ -80,7 +80,7 @@ func (r *Reputation) CheckStatus() modules.UserOpHandlerFunc {
 						fmt.Sprintf("banned entity: %s", paymaster.Hex()),
 						nil,
 					)
-				} else if status == throttled && len(ctx.GetPendingPaymasterOps()) == r.repConst.ThrottledEntityMempoolCount {
+				} else if status == throttled && len(ctx.GetPendingPaymasterTxs()) == r.repConst.ThrottledEntityMempoolCount {
 					return errors.NewRPCError(
 						errors.BANNED_OR_THROTTLED_ENTITY,
 						fmt.Sprintf("throttled entity: %s", paymaster.Hex()),
@@ -96,32 +96,30 @@ func (r *Reputation) CheckStatus() modules.UserOpHandlerFunc {
 
 // ValidateOpLimit returns a UserOpHandler that is used by the Client to determine if the userOp is allowed
 // based on the entities stake and the number of pending ops in the mempool.
-func (r *Reputation) ValidateOpLimit() modules.UserOpHandlerFunc {
-	return func(ctx *modules.UserOpHandlerCtx) error {
-		pso := ctx.GetPendingSenderOps()
-		sd := ctx.GetSenderDepositInfo()
-		if !sd.Staked && len(pso) == r.repConst.SameSenderMempoolCount {
+func (r *Reputation) ValidateOpLimit() modules.Rip7560TxHandlerFunc {
+	return func(ctx *modules.TxHandlerCtx) error {
+		pso := ctx.GetPendingSenderTxs()
+		if len(pso) == r.repConst.SameSenderMempoolCount {
 			return errors.NewRPCError(
 				errors.INVALID_ENTITY_STAKE,
 				fmt.Sprintf(
 					"unstaked entity: %s exceeds pending ops limit of %d",
-					ctx.UserOp.Sender.Hex(),
+					ctx.Tx.Sender.Hex(),
 					r.repConst.SameSenderMempoolCount,
 				),
 				nil,
 			)
 		}
 
-		factory := ctx.UserOp.GetFactory()
-		if factory != common.HexToAddress("0x") {
-			pfo := ctx.GetPendingFactoryOps()
-			fd := ctx.GetFactoryDepositInfo()
-			if !fd.Staked && len(pfo) == r.repConst.SameUnstakedEntityMempoolCount {
+		deployer := ctx.GetDeployer()
+		if deployer != common.HexToAddress("0x") {
+			pfo := ctx.GetPendingFactoryTxs()
+			if len(pfo) == r.repConst.SameUnstakedEntityMempoolCount {
 				return errors.NewRPCError(
 					errors.INVALID_ENTITY_STAKE,
 					fmt.Sprintf(
 						"unstaked entity: %s exceeds pending ops limit of %d",
-						factory.Hex(),
+						deployer.Hex(),
 						r.repConst.SameUnstakedEntityMempoolCount,
 					),
 					nil,
@@ -129,11 +127,10 @@ func (r *Reputation) ValidateOpLimit() modules.UserOpHandlerFunc {
 			}
 		}
 
-		paymaster := ctx.UserOp.GetPaymaster()
+		paymaster := ctx.GetPaymaster()
 		if paymaster != common.HexToAddress("0x") {
-			ppo := ctx.GetPendingPaymasterOps()
-			pd := ctx.GetPaymasterDepositInfo()
-			if !pd.Staked && len(ppo) == r.repConst.SameUnstakedEntityMempoolCount {
+			ppo := ctx.GetPendingPaymasterTxs()
+			if len(ppo) == r.repConst.SameUnstakedEntityMempoolCount {
 				return errors.NewRPCError(
 					errors.INVALID_ENTITY_STAKE,
 					fmt.Sprintf(
@@ -152,18 +149,18 @@ func (r *Reputation) ValidateOpLimit() modules.UserOpHandlerFunc {
 
 // IncOpsSeen returns a UserOpHandler that is used by the Client to increment the opsSeen counter for all
 // included entities.
-func (r *Reputation) IncOpsSeen() modules.UserOpHandlerFunc {
-	return func(ctx *modules.UserOpHandlerCtx) error {
+func (r *Reputation) IncOpsSeen() modules.Rip7560TxHandlerFunc {
+	return func(ctx *modules.TxHandlerCtx) error {
 		return r.db.Update(func(txn *badger.Txn) error {
 			var err error
-			err = stdErr.Join(err, incrementOpsSeenByEntity(txn, ctx.UserOp.Sender))
+			err = stdErr.Join(err, incrementOpsSeenByEntity(txn, ctx.GetSender()))
 
-			factory := ctx.UserOp.GetFactory()
-			if factory != common.HexToAddress("0x") {
-				err = stdErr.Join(err, incrementOpsSeenByEntity(txn, factory))
+			deployer := ctx.GetDeployer()
+			if deployer != common.HexToAddress("0x") {
+				err = stdErr.Join(err, incrementOpsSeenByEntity(txn, deployer))
 			}
 
-			paymaster := ctx.UserOp.GetPaymaster()
+			paymaster := ctx.GetPaymaster()
 			if paymaster != common.HexToAddress("0x") {
 				err = stdErr.Join(err, incrementOpsSeenByEntity(txn, paymaster))
 			}
@@ -179,22 +176,22 @@ func (r *Reputation) IncOpsIncluded() modules.BatchHandlerFunc {
 	return func(ctx *modules.BatchHandlerCtx) error {
 		return r.db.Update(func(txn *badger.Txn) error {
 			c := make(addressCounter)
-			for _, op := range ctx.Batch {
-				if _, ok := c[op.Sender]; !ok {
-					c[op.Sender] = 0
+			for _, aaTxRaw := range ctx.Batch {
+				if _, ok := c[aaTxRaw.GetSender()]; !ok {
+					c[aaTxRaw.GetSender()] = 0
 				}
-				c[op.Sender]++
+				c[aaTxRaw.GetSender()]++
 
-				factory := op.GetFactory()
-				if factory != common.HexToAddress("0x") {
-					if _, ok := c[factory]; !ok {
-						c[factory] = 0
+				deployer := aaTxRaw.GetDeployer()
+				if deployer != common.HexToAddress("0x") {
+					if _, ok := c[deployer]; !ok {
+						c[deployer] = 0
 					}
 
-					c[factory]++
+					c[deployer]++
 				}
 
-				paymaster := op.GetPaymaster()
+				paymaster := aaTxRaw.GetPaymaster()
 				if paymaster != common.HexToAddress("0x") {
 					if _, ok := c[paymaster]; !ok {
 						c[paymaster] = 0

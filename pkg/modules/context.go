@@ -1,17 +1,16 @@
 package modules
 
 import (
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/stackup-wallet/stackup-bundler/pkg/rip7560/transaction"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/stackup-wallet/stackup-bundler/pkg/entrypoint"
-	"github.com/stackup-wallet/stackup-bundler/pkg/entrypoint/stake"
 	"github.com/stackup-wallet/stackup-bundler/pkg/mempool"
-	"github.com/stackup-wallet/stackup-bundler/pkg/userop"
 )
 
 type PendingRemovalItem struct {
-	Op     *userop.UserOperation
+	Tx     *transaction.TransactionArgs
 	Reason string
 }
 
@@ -19,9 +18,8 @@ type PendingRemovalItem struct {
 // also contains a Data field for adding arbitrary key-value pairs to the context. These values will be
 // logged by the Bundler at the end of each run.
 type BatchHandlerCtx struct {
-	Batch          []*userop.UserOperation
+	Batch          []*transaction.TransactionArgs
 	PendingRemoval []*PendingRemovalItem
-	EntryPoint     common.Address
 	ChainID        *big.Int
 	BaseFee        *big.Int
 	Tip            *big.Int
@@ -31,17 +29,17 @@ type BatchHandlerCtx struct {
 
 // NewBatchHandlerContext creates a new BatchHandlerCtx using a copy of the given batch.
 func NewBatchHandlerContext(
-	batch []*userop.UserOperation,
+	batch []*transaction.TransactionArgs,
 	chainID *big.Int,
 	baseFee *big.Int,
 	tip *big.Int,
 	gasPrice *big.Int,
 ) *BatchHandlerCtx {
-	var copy []*userop.UserOperation
-	copy = append(copy, batch...)
+	var batchAppended []*transaction.TransactionArgs
+	batchAppended = append(batchAppended, batch...)
 
 	return &BatchHandlerCtx{
-		Batch:          copy,
+		Batch:          batchAppended,
 		PendingRemoval: []*PendingRemovalItem{},
 		ChainID:        chainID,
 		BaseFee:        baseFee,
@@ -54,113 +52,109 @@ func NewBatchHandlerContext(
 // MarkOpIndexForRemoval will remove the op by index from the batch and add it to the pending removal array.
 // This should be used for ops that are not to be included on-chain and dropped from the mempool.
 func (c *BatchHandlerCtx) MarkOpIndexForRemoval(index int, reason string) {
-	batch := []*userop.UserOperation{}
-	var op *userop.UserOperation
+	var batch []*transaction.TransactionArgs
+	var tx *transaction.TransactionArgs
 	for i, curr := range c.Batch {
 		if i == index {
-			op = curr
+			tx = curr
 		} else {
 			batch = append(batch, curr)
 		}
 	}
-	if op == nil {
+	if tx == nil {
 		return
 	}
 
 	c.Batch = batch
 	c.PendingRemoval = append(c.PendingRemoval, &PendingRemovalItem{
-		Op:     op,
+		Tx:     tx,
 		Reason: reason,
 	})
 }
 
-// UserOpHandlerCtx is the object passed to UserOpHandler functions during the Client's SendUserOperation
+// TxHandlerCtx is the object passed to UserOpHandler functions during the Client's SendRip7560Transaction
 // process.
-type UserOpHandlerCtx struct {
-	UserOp              *userop.UserOperation
+type TxHandlerCtx struct {
+	Tx                  *transaction.TransactionArgs
 	ChainID             *big.Int
-	pendingSenderOps    []*userop.UserOperation
-	pendingFactoryOps   []*userop.UserOperation
-	pendingPaymasterOps []*userop.UserOperation
-	senderDeposit       *entrypoint.IStakeManagerDepositInfo
-	factoryDeposit      *entrypoint.IStakeManagerDepositInfo
-	paymasterDeposit    *entrypoint.IStakeManagerDepositInfo
+	pendingSenderTxs    []*transaction.TransactionArgs
+	pendingDeployerTxs  []*transaction.TransactionArgs
+	pendingPaymasterTxs []*transaction.TransactionArgs
 }
 
-// NewUserOpHandlerContext creates a new UserOpHandlerCtx using a given op.
-func NewUserOpHandlerContext(
-	op *userop.UserOperation,
+// NewTxHandlerContext creates a new TxHandlerCtx using a given op.
+func NewTxHandlerContext(
+	txArgs *transaction.TransactionArgs,
 	chainID *big.Int,
 	mem *mempool.Mempool,
-	gs stake.GetStakeFunc,
-) (*UserOpHandlerCtx, error) {
-	// Fetch any pending UserOperations in the mempool by entity
-	pso, err := mem.GetOps(op.Sender)
+) (*TxHandlerCtx, error) {
+	// Fetch any pending Transactions in the mempool by entity
+	pso, err := mem.GetTxs(txArgs.GetSender())
 	if err != nil {
 		return nil, err
 	}
-	pfo, err := mem.GetOps(op.GetFactory())
+	pdo, err := mem.GetTxs(txArgs.GetDeployer())
 	if err != nil {
 		return nil, err
 	}
-	ppo, err := mem.GetOps(op.GetPaymaster())
+	ppo, err := mem.GetTxs(txArgs.GetPaymaster())
 	if err != nil {
 		return nil, err
 	}
 
-	// TODO : We'll need this later when we utilize the entrypoint's staking functionality.
-	// Fetch the current entrypoint deposits by entity
-	//sd, err := gs(entryPoint, op.Sender)
-	//if err != nil {
-	//	return nil, err
-	//}
-	//fd, err := gs(entryPoint, op.GetFactory())
-	//if err != nil {
-	//	return nil, err
-	//}
-	//pd, err := gs(entryPoint, op.GetPaymaster())
-	//if err != nil {
-	//	return nil, err
-	//}
-
-	return &UserOpHandlerCtx{
-		UserOp:              op,
+	return &TxHandlerCtx{
+		Tx:                  txArgs,
 		ChainID:             chainID,
-		pendingSenderOps:    pso,
-		pendingFactoryOps:   pfo,
-		pendingPaymasterOps: ppo,
-		//senderDeposit:    sd,
-		//factoryDeposit:   fd,
-		//paymasterDeposit: pd,
+		pendingSenderTxs:    pso,
+		pendingDeployerTxs:  pdo,
+		pendingPaymasterTxs: ppo,
 	}, nil
 }
 
-// GetSenderDepositInfo returns the current EntryPoint deposit for the sender.
-func (c *UserOpHandlerCtx) GetSenderDepositInfo() *entrypoint.IStakeManagerDepositInfo {
-	return c.senderDeposit
+func (c *TxHandlerCtx) GetRip7560Transaction() *types.Rip7560AccountAbstractionTx {
+	return c.Tx.ToTransaction().Rip7560TransactionData()
 }
 
-// GetFactoryDepositInfo returns the current EntryPoint deposit for the factory.
-func (c *UserOpHandlerCtx) GetFactoryDepositInfo() *entrypoint.IStakeManagerDepositInfo {
-	return c.factoryDeposit
+func (c *TxHandlerCtx) GetSender() common.Address {
+	if c.Tx.ToTransaction().Rip7560TransactionData().Sender == nil {
+		return common.Address{}
+	}
+	return *c.Tx.ToTransaction().Rip7560TransactionData().Sender
 }
 
-// GetPaymasterDepositInfo returns the current EntryPoint deposit for the paymaster.
-func (c *UserOpHandlerCtx) GetPaymasterDepositInfo() *entrypoint.IStakeManagerDepositInfo {
-	return c.paymasterDeposit
+func (c *TxHandlerCtx) GetPaymaster() common.Address {
+	if c.Tx.ToTransaction().Rip7560TransactionData().Paymaster == nil {
+		return common.Address{}
+	}
+	return *c.Tx.ToTransaction().Rip7560TransactionData().Paymaster
 }
 
-// GetPendingSenderOps returns all pending UserOperations in the mempool by the same sender.
-func (c *UserOpHandlerCtx) GetPendingSenderOps() []*userop.UserOperation {
-	return c.pendingSenderOps
+func (c *TxHandlerCtx) GetDeployer() common.Address {
+	if c.Tx.ToTransaction().Rip7560TransactionData().Deployer == nil {
+		return common.Address{}
+	}
+	return *c.Tx.ToTransaction().Rip7560TransactionData().Deployer
 }
 
-// GetPendingFactoryOps returns all pending UserOperations in the mempool by the same factory.
-func (c *UserOpHandlerCtx) GetPendingFactoryOps() []*userop.UserOperation {
-	return c.pendingFactoryOps
+func (c *TxHandlerCtx) GetPaymasterData() []byte {
+	return c.Tx.ToTransaction().Rip7560TransactionData().PaymasterData
 }
 
-// GetPendingPaymasterOps returns all pending UserOperations in the mempool by the same paymaster.
-func (c *UserOpHandlerCtx) GetPendingPaymasterOps() []*userop.UserOperation {
-	return c.pendingPaymasterOps
+func (c *TxHandlerCtx) GetDeployerData() []byte {
+	return c.Tx.ToTransaction().Rip7560TransactionData().DeployerData
+}
+
+// GetPendingSenderTxs returns all pending UserOperations in the mempool by the same sender.
+func (c *TxHandlerCtx) GetPendingSenderTxs() []*transaction.TransactionArgs {
+	return c.pendingSenderTxs
+}
+
+// GetPendingFactoryTxs returns all pending UserOperations in the mempool by the same factory.
+func (c *TxHandlerCtx) GetPendingFactoryTxs() []*transaction.TransactionArgs {
+	return c.pendingDeployerTxs
+}
+
+// GetPendingPaymasterTxs returns all pending UserOperations in the mempool by the same paymaster.
+func (c *TxHandlerCtx) GetPendingPaymasterTxs() []*transaction.TransactionArgs {
+	return c.pendingPaymasterTxs
 }

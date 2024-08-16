@@ -8,7 +8,7 @@ func BatchHandler(ctx *modules.BatchHandlerCtx) error {
 	return nil
 }
 
-// UserOpHandler takes a UserOpHandlerCtx and returns nil error.
-func UserOpHandler(ctx *modules.UserOpHandlerCtx) error {
+// Rip7560TxHandler takes a TxHandlerCtx and returns nil error.
+func Rip7560TxHandler(ctx *modules.TxHandlerCtx) error {
 	return nil
 }

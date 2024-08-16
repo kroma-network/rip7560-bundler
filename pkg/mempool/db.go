@@ -1,40 +1,35 @@
 package mempool
 
 import (
-	"encoding/json"
-	"math/big"
-
+	"fmt"
 	badger "github.com/dgraph-io/badger/v3"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/stackup-wallet/stackup-bundler/internal/dbutils"
-	"github.com/stackup-wallet/stackup-bundler/pkg/userop"
+	"github.com/stackup-wallet/stackup-bundler/pkg/rip7560/transaction"
 )
 
 var (
 	keyPrefix = dbutils.JoinValues("mempool")
 )
 
-func getUniqueKey(sender common.Address, nonce *big.Int) []byte {
+func getUniqueKey(sender common.Address, bigNonce *hexutil.Big) []byte {
 	return []byte(
-		dbutils.JoinValues(keyPrefix, sender.String(), nonce.String()),
+		dbutils.JoinValues(keyPrefix, sender.String(), bigNonce.String()),
 	)
 }
 
-func getUserOpFromDBValue(value []byte) (*userop.UserOperation, error) {
-	data := make(map[string]any)
-	if err := json.Unmarshal(value, &data); err != nil {
-		return nil, err
-	}
-
-	op, err := userop.New(data)
+func getTransactionsFromDBValue(serializedTx []byte) (*transaction.TransactionArgs, error) {
+	var decodedTx *transaction.TransactionArgs
+	err := rlp.DecodeBytes(serializedTx, &decodedTx)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to RLP decode transactions: %v", err)
 	}
-
-	return op, nil
+	return decodedTx, nil
 }
 
-func loadFromDisk(db *badger.DB, q *userOpQueues) error {
+func loadFromDisk(db *badger.DB, q *rip7560TxQueues) error {
 	return db.View(func(txn *badger.Txn) error {
 		opts := badger.DefaultIteratorOptions
 		opts.PrefetchSize = 10
@@ -46,12 +41,12 @@ func loadFromDisk(db *badger.DB, q *userOpQueues) error {
 			item := it.Item()
 
 			err := item.Value(func(v []byte) error {
-				op, err := getUserOpFromDBValue(v)
+				tx, err := getTransactionsFromDBValue(v)
 				if err != nil {
 					return err
 				}
 
-				q.AddOp(op)
+				q.AddTx(tx)
 				return nil
 			})
 

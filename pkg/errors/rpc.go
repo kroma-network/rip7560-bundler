@@ -1,5 +1,6 @@
 package errors
 
+// TODO : redefine code
 var (
 	REJECTED_BY_EP_OR_ACCOUNT  = -32500
 	REJECTED_BY_PAYMASTER      = -32501

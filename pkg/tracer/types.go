@@ -29,27 +29,8 @@ type ContractSizeMap map[common.Address]ContractSizeInfo
 // ExtCodeAccessInfoMap provides context on potentially illegal use of EXTCODESIZE.
 type ExtCodeAccessInfoMap map[common.Address]string
 
-// CallFromEntryPoint provides context on opcodes and storage access made via the EntryPoint to UserOperation
-// entities.
-type CallFromEntryPointInfo struct {
-	TopLevelMethodSig     hexutil.Bytes        `json:"topLevelMethodSig"`
-	TopLevelTargetAddress common.Address       `json:"topLevelTargetAddress"`
-	Opcodes               Counts               `json:"opcodes"`
-	Access                AccessMap            `json:"access"`
-	ContractSize          ContractSizeMap      `json:"contractSize"`
-	ExtCodeAccessInfo     ExtCodeAccessInfoMap `json:"extCodeAccessInfo"`
-	OOG                   bool                 `json:"oog"`
-}
-
-//func (c *CallFromEntryPointInfo) UnmarshalJSON(input []byte) error {
-//	err := json.Unmarshal(input, c)
-//	if err != nil {
-//		return err
-//	}
-//	return nil
-//}
-
 // CallInfo provides context on internal calls made during tracing.
+// same as Rip7560ValidationResult - callframe
 type CallInfo struct {
 	// Common
 	Type string `json:"type"`
@@ -85,8 +66,7 @@ func (c *CallInfo) UnmarshalJSON(input []byte) error {
 	c.From = data.From
 	c.To = *data.To
 	c.Data = common.Bytes2Hex(data.Input)
-	//TODO : is this needed?
-	//c.Method = common.Bytes2Hex(data.Input)
+	c.Method = common.Bytes2Hex(data.Input)
 	c.Value = data.Value.String()
 	c.Gas = float64(data.Gas)
 	c.GasUsed = float64(data.GasUsed)
@@ -97,24 +77,4 @@ func (c *CallInfo) UnmarshalJSON(input []byte) error {
 type LogInfo struct {
 	Topics []string `json:"topics"`
 	Data   string   `json:"data"`
-}
-
-// BundlerCollectorReturn is the return value from performing an EVM trace with BundlerCollectorTracer.js.
-type BundlerCollectorReturn struct {
-	CallsFromEntryPoint []CallFromEntryPointInfo `json:"callsFromEntryPoint"`
-	Keccak              []string                 `json:"keccak"`
-	Calls               []CallInfo               `json:"calls"`
-	Logs                []LogInfo                `json:"logs"`
-	Debug               []any                    `json:"debug"`
-}
-
-// BundlerExecutionReturn is the return value from performing an EVM trace with BundlerExecutionTracer.js.
-type BundlerExecutionReturn struct {
-	Reverts            []string `json:"reverts"`
-	ValidationOOG      bool     `json:"validationOOG"`
-	ExecutionOOG       bool     `json:"executionOOG"`
-	ExecutionGasLimit  float64  `json:"executionGasLimit"`
-	UserOperationEvent *LogInfo `json:"userOperationEvent,omitempty"`
-	Output             string   `json:"output"`
-	Error              string   `json:"error"`
 }

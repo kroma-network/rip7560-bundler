@@ -2,19 +2,20 @@ package checks
 
 import (
 	"errors"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/stackup-wallet/stackup-bundler/pkg/rip7560/transaction"
 	"math/big"
 	"testing"
 
 	"github.com/stackup-wallet/stackup-bundler/internal/testutils"
-	"github.com/stackup-wallet/stackup-bundler/pkg/userop"
 )
 
-func TestNoPendingOps(t *testing.T) {
-	penOps := []*userop.UserOperation{}
-	op := testutils.MockValidInitUserOp()
-	err := ValidatePendingOps(
-		op,
-		penOps,
+func TestNoPendingTxs(t *testing.T) {
+	var penTxs []*transaction.TransactionArgs
+	tx := testutils.MockValidInitRip7560Tx()
+	err := ValidatePendingTxs(
+		tx,
+		penTxs,
 	)
 
 	if err != nil {
@@ -22,14 +23,14 @@ func TestNoPendingOps(t *testing.T) {
 	}
 }
 
-func TestPendingOpsWithNewOp(t *testing.T) {
-	penOp := testutils.MockValidInitUserOp()
-	penOps := []*userop.UserOperation{penOp}
-	op := testutils.MockValidInitUserOp()
-	op.Nonce = big.NewInt(1)
-	err := ValidatePendingOps(
-		op,
-		penOps,
+func TestPendingTxsWithNewTx(t *testing.T) {
+	penTx := testutils.MockValidInitRip7560Tx()
+	penTxs := []*transaction.TransactionArgs{penTx}
+	tx := testutils.MockValidInitRip7560Tx()
+	tx.Nonce = (*hexutil.Uint64)(&testutils.DummyNonce1)
+	err := ValidatePendingTxs(
+		tx,
+		penTxs,
 	)
 
 	if err != nil {
@@ -37,13 +38,13 @@ func TestPendingOpsWithNewOp(t *testing.T) {
 	}
 }
 
-func TestPendingOpsWithNoGasFeeReplacement(t *testing.T) {
-	penOp := testutils.MockValidInitUserOp()
-	penOps := []*userop.UserOperation{penOp}
-	op := testutils.MockValidInitUserOp()
-	err := ValidatePendingOps(
-		op,
-		penOps,
+func TestPendingTxsWithNoGasFeeReplacement(t *testing.T) {
+	penTx := testutils.MockValidInitRip7560Tx()
+	penTxs := []*transaction.TransactionArgs{penTx}
+	tx := testutils.MockValidInitRip7560Tx()
+	err := ValidatePendingTxs(
+		tx,
+		penTxs,
 	)
 
 	if !errors.Is(err, ErrReplacementOpUnderpriced) {
@@ -51,14 +52,15 @@ func TestPendingOpsWithNoGasFeeReplacement(t *testing.T) {
 	}
 }
 
-func TestPendingOpsWithOnlyMaxFeeReplacement(t *testing.T) {
-	penOp := testutils.MockValidInitUserOp()
-	penOps := []*userop.UserOperation{penOp}
-	op := testutils.MockValidInitUserOp()
-	op.MaxFeePerGas, _ = calcNewThresholds(op.MaxFeePerGas, op.MaxPriorityFeePerGas)
-	err := ValidatePendingOps(
-		op,
-		penOps,
+func TestPendingTxsWithOnlyMaxFeeReplacement(t *testing.T) {
+	penTx := testutils.MockValidInitRip7560Tx()
+	penTxs := []*transaction.TransactionArgs{penTx}
+	tx := testutils.MockValidInitRip7560Tx()
+	maxFeePerGas, _ := calcNewThresholds((*big.Int)(tx.MaxFeePerGas), (*big.Int)(tx.MaxPriorityFeePerGas))
+	tx.MaxFeePerGas = (*hexutil.Big)(maxFeePerGas)
+	err := ValidatePendingTxs(
+		tx,
+		penTxs,
 	)
 
 	if !errors.Is(err, ErrReplacementOpUnderpriced) {
@@ -66,14 +68,15 @@ func TestPendingOpsWithOnlyMaxFeeReplacement(t *testing.T) {
 	}
 }
 
-func TestPendingOpsWithOnlyMaxPriorityFeeReplacement(t *testing.T) {
-	penOp := testutils.MockValidInitUserOp()
-	penOps := []*userop.UserOperation{penOp}
-	op := testutils.MockValidInitUserOp()
-	_, op.MaxPriorityFeePerGas = calcNewThresholds(op.MaxFeePerGas, op.MaxPriorityFeePerGas)
-	err := ValidatePendingOps(
-		op,
-		penOps,
+func TestPendingTxsWithOnlyMaxPriorityFeeReplacement(t *testing.T) {
+	penTx := testutils.MockValidInitRip7560Tx()
+	penTxs := []*transaction.TransactionArgs{penTx}
+	tx := testutils.MockValidInitRip7560Tx()
+	maxFeePerGas, _ := calcNewThresholds((*big.Int)(tx.MaxFeePerGas), (*big.Int)(tx.MaxPriorityFeePerGas))
+	tx.MaxFeePerGas = (*hexutil.Big)(maxFeePerGas)
+	err := ValidatePendingTxs(
+		tx,
+		penTxs,
 	)
 
 	if !errors.Is(err, ErrReplacementOpUnderpriced) {
@@ -82,13 +85,14 @@ func TestPendingOpsWithOnlyMaxPriorityFeeReplacement(t *testing.T) {
 }
 
 func TestPendingOpsWithOkGasFeeReplacement(t *testing.T) {
-	penOp := testutils.MockValidInitUserOp()
-	penOps := []*userop.UserOperation{penOp}
-	op := testutils.MockValidInitUserOp()
-	op.MaxFeePerGas, op.MaxPriorityFeePerGas = calcNewThresholds(op.MaxFeePerGas, op.MaxPriorityFeePerGas)
-	err := ValidatePendingOps(
-		op,
-		penOps,
+	penTx := testutils.MockValidInitRip7560Tx()
+	penTxs := []*transaction.TransactionArgs{penTx}
+	tx := testutils.MockValidInitRip7560Tx()
+	maxFeePerGas, _ := calcNewThresholds((*big.Int)(tx.MaxFeePerGas), (*big.Int)(tx.MaxPriorityFeePerGas))
+	tx.MaxFeePerGas = (*hexutil.Big)(maxFeePerGas)
+	err := ValidatePendingTxs(
+		tx,
+		penTxs,
 	)
 
 	if err != nil {

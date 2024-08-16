@@ -25,7 +25,7 @@ func GetGasTipWithEthClient(eth *ethclient.Client) GetGasTipFunc {
 		//	return nil, err
 		//}
 		//return gt, nil
-		tip := new(big.Int).SetUint64(1)
-		return tip, nil
+		// FIXME : for test
+		return new(big.Int).SetUint64(1), nil
 	}
 }

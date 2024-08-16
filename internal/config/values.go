@@ -14,34 +14,19 @@ import (
 
 type Values struct {
 	// Documented variables.
-	PrivateKey                   string
-	EthClientUrl                 string
-	Port                         int
-	DataDirectory                string
-	MaxVerificationGas           *big.Int
-	MaxBatchGasLimit             *big.Int
-	MaxOpTTL                     time.Duration
-	OpLookupLimit                uint64
-	NativeBundlerCollectorTracer string
-	NativeBundlerExecutorTracer  string
-	ReputationConstants          *entities.ReputationConstants
+	PrivateKey          string
+	EthClientUrl        string
+	Port                int
+	DataDirectory       string
+	MaxVerificationGas  *big.Int
+	MaxBatchGasLimit    *big.Int
+	MaxOpTTL            time.Duration
+	OpLookupLimit       uint64
+	ReputationConstants *entities.ReputationConstants
 
 	// Searcher mode variables.
 	EthBuilderUrls    []string
 	BlocksInTheFuture int
-
-	// Observability variables.
-	OTELServiceName      string
-	OTELCollectorHeaders map[string]string
-	OTELCollectorUrl     string
-	OTELInsecureMode     bool
-
-	// Alternative mempool variables.
-	AltMempoolIPFSGateway string
-	AltMempoolIds         []string
-
-	// Rollup related variables.
-	IsRIP7212Supported bool
 
 	// Undocumented variables.
 	DebugMode bool
@@ -94,8 +79,6 @@ func GetValues() *Values {
 	viper.SetDefault("rip7560_bundler_max_op_ttl_seconds", 180)
 	viper.SetDefault("rip7560_bundler_op_lookup_limit", 2000)
 	viper.SetDefault("rip7560_bundler_blocks_in_the_future", 6)
-	viper.SetDefault("rip7560_bundler_otel_insecure_mode", false)
-	viper.SetDefault("rip7560_bundler_is_rip7212_supported", true)
 	viper.SetDefault("rip7560_bundler_debug_mode", false)
 	viper.SetDefault("rip7560_bundler_gin_mode", gin.ReleaseMode)
 
@@ -118,21 +101,12 @@ func GetValues() *Values {
 	_ = viper.BindEnv("rip7560_bundler_port")
 	_ = viper.BindEnv("rip7560_bundler_data_directory")
 	_ = viper.BindEnv("rip7560_bundler_supported_entry_points")
-	_ = viper.BindEnv("rip7560_bundler_native_bundler_collector_tracer")
-	_ = viper.BindEnv("rip7560_bundler_native_bundler_executor_tracer")
 	_ = viper.BindEnv("rip7560_bundler_max_verification_gas")
 	_ = viper.BindEnv("rip7560_bundler_max_batch_gas_limit")
 	_ = viper.BindEnv("rip7560_bundler_max_op_ttl_seconds")
 	_ = viper.BindEnv("rip7560_bundler_op_lookup_limit")
 	_ = viper.BindEnv("rip7560_bundler_eth_builder_urls")
 	_ = viper.BindEnv("rip7560_bundler_blocks_in_the_future")
-	_ = viper.BindEnv("rip7560_bundler_otel_service_name")
-	_ = viper.BindEnv("rip7560_bundler_otel_collector_headers")
-	_ = viper.BindEnv("rip7560_bundler_otel_collector_url")
-	_ = viper.BindEnv("rip7560_bundler_otel_insecure_mode")
-	_ = viper.BindEnv("rip7560_bundler_alt_mempool_ipfs_gateway")
-	_ = viper.BindEnv("rip7560_bundler_alt_mempool_ids")
-	_ = viper.BindEnv("rip7560_bundler_is_rip7212_supported")
 	_ = viper.BindEnv("rip7560_bundler_debug_mode")
 	_ = viper.BindEnv("rip7560_bundler_gin_mode")
 
@@ -152,62 +126,32 @@ func GetValues() *Values {
 		}
 	}
 
-	// Validate O11Y variables
-	if viper.IsSet("rip7560_bundler_otel_service_name") &&
-		variableNotSetOrIsNil("rip7560_bundler_otel_collector_url") {
-		panic("Fatal config error: rip7560_bundler_otel_service_name is set without a collector URL")
-	}
-
-	// Validate Alternative mempool variables
-	if viper.IsSet("rip7560_bundler_alt_mempool_ids") &&
-		variableNotSetOrIsNil("rip7560_bundler_alt_mempool_ipfs_gateway") {
-		panic("Fatal config error: rip7560_bundler_alt_mempool_ids is set without specifying an IPFS gateway")
-	}
-
 	// Return Values
 	privateKey := viper.GetString("rip7560_bundler_private_key")
 	ethClientUrl := viper.GetString("rip7560_bundler_eth_client_url")
 	port := viper.GetInt("rip7560_bundler_port")
 	dataDirectory := viper.GetString("rip7560_bundler_data_directory")
-	nativeBundlerCollectorTracer := viper.GetString("rip7560_bundler_native_bundler_collector_tracer")
-	nativeBundlerExecutorTracer := viper.GetString("rip7560_bundler_native_bundler_executor_tracer")
 	maxVerificationGas := big.NewInt(int64(viper.GetInt("rip7560_bundler_max_verification_gas")))
 	maxBatchGasLimit := big.NewInt(int64(viper.GetInt("rip7560_bundler_max_batch_gas_limit")))
 	maxOpTTL := time.Second * viper.GetDuration("rip7560_bundler_max_op_ttl_seconds")
 	opLookupLimit := viper.GetUint64("rip7560_bundler_op_lookup_limit")
 	ethBuilderUrls := envArrayToStringSlice(viper.GetString("rip7560_bundler_eth_builder_urls"))
 	blocksInTheFuture := viper.GetInt("rip7560_bundler_blocks_in_the_future")
-	otelServiceName := viper.GetString("rip7560_bundler_otel_service_name")
-	otelCollectorHeader := envKeyValStringToMap(viper.GetString("rip7560_bundler_otel_collector_headers"))
-	otelCollectorUrl := viper.GetString("rip7560_bundler_otel_collector_url")
-	otelInsecureMode := viper.GetBool("rip7560_bundler_otel_insecure_mode")
-	altMempoolIPFSGateway := viper.GetString("rip7560_bundler_alt_mempool_ipfs_gateway")
-	altMempoolIds := envArrayToStringSlice(viper.GetString("rip7560_bundler_alt_mempool_ids"))
-	isRIP7212Supported := viper.GetBool("rip7560_bundler_is_rip7212_supported")
 	debugMode := viper.GetBool("rip7560_bundler_debug_mode")
 	ginMode := viper.GetString("rip7560_bundler_gin_mode")
 	return &Values{
-		PrivateKey:                   privateKey,
-		EthClientUrl:                 ethClientUrl,
-		Port:                         port,
-		DataDirectory:                dataDirectory,
-		NativeBundlerCollectorTracer: nativeBundlerCollectorTracer,
-		NativeBundlerExecutorTracer:  nativeBundlerExecutorTracer,
-		MaxVerificationGas:           maxVerificationGas,
-		MaxBatchGasLimit:             maxBatchGasLimit,
-		MaxOpTTL:                     maxOpTTL,
-		OpLookupLimit:                opLookupLimit,
-		ReputationConstants:          NewReputationConstantsFromEnv(),
-		EthBuilderUrls:               ethBuilderUrls,
-		BlocksInTheFuture:            blocksInTheFuture,
-		OTELServiceName:              otelServiceName,
-		OTELCollectorHeaders:         otelCollectorHeader,
-		OTELCollectorUrl:             otelCollectorUrl,
-		OTELInsecureMode:             otelInsecureMode,
-		AltMempoolIPFSGateway:        altMempoolIPFSGateway,
-		AltMempoolIds:                altMempoolIds,
-		IsRIP7212Supported:           isRIP7212Supported,
-		DebugMode:                    debugMode,
-		GinMode:                      ginMode,
+		PrivateKey:          privateKey,
+		EthClientUrl:        ethClientUrl,
+		Port:                port,
+		DataDirectory:       dataDirectory,
+		MaxVerificationGas:  maxVerificationGas,
+		MaxBatchGasLimit:    maxBatchGasLimit,
+		MaxOpTTL:            maxOpTTL,
+		OpLookupLimit:       opLookupLimit,
+		ReputationConstants: NewReputationConstantsFromEnv(),
+		EthBuilderUrls:      ethBuilderUrls,
+		BlocksInTheFuture:   blocksInTheFuture,
+		DebugMode:           debugMode,
+		GinMode:             ginMode,
 	}
 }
