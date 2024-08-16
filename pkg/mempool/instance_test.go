@@ -1,6 +1,7 @@
 package mempool
 
 import (
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"math/big"
 	"testing"
 
@@ -8,77 +9,77 @@ import (
 	"github.com/stackup-wallet/stackup-bundler/internal/testutils"
 )
 
-// TestAddOpToMempool verifies that a UserOperation can be added to the mempool and later retrieved without
+// TestAddTxToMempool verifies that a UserOperation can be added to the mempool and later retrieved without
 // any changes.
-func TestAddOpToMempool(t *testing.T) {
+func TestAddTxToMempool(t *testing.T) {
 	db := testutils.DBMock()
 	defer db.Close()
 	mem, _ := New(db)
-	op := testutils.MockValidInitUserOp()
+	txArgs := testutils.MockValidInitRip7560Tx()
 
-	if err := mem.AddOp(op); err != nil {
+	if err := mem.AddTx(txArgs); err != nil {
 		t.Fatalf("got %v, want nil", err)
 	}
 
-	memOps, err := mem.GetOps(op.Sender)
+	memTxs, err := mem.GetTxs(txArgs.GetSender())
 	if err != nil {
 		t.Fatalf("got %v, want nil", err)
 	}
-	if len(memOps) != 1 {
-		t.Fatalf("got length %d, want 1", len(memOps))
+	if len(memTxs) != 1 {
+		t.Fatalf("got length %d, want 1", len(memTxs))
 	}
 
-	if !testutils.IsOpsEqual(op, memOps[0]) {
-		t.Fatalf("ops not equal: %s", testutils.GetOpsDiff(op, memOps[0]))
+	if !testutils.IsTxsEqual(txArgs, memTxs[0]) {
+		t.Fatalf("ops not equal: %s", testutils.GetTxsDiff(txArgs, memTxs[0]))
 	}
 }
 
-// TestReplaceOpInMempool verifies that a UserOperation with same Sender and Nonce can replace another
+// TestReplaceTxInMempool verifies that a RIP-7560 transaction with same Sender and Nonce can replace another
 // UserOperation already in the mempool.
-func TestReplaceOpInMempool(t *testing.T) {
+func TestReplaceTxInMempool(t *testing.T) {
 	db := testutils.DBMock()
 	defer db.Close()
 	mem, _ := New(db)
-	op1 := testutils.MockValidInitUserOp()
-	op2 := testutils.MockValidInitUserOp()
-	op2.MaxPriorityFeePerGas = big.NewInt(0).Add(op1.MaxPriorityFeePerGas, common.Big1)
+	tx1 := testutils.MockValidInitRip7560Tx()
+	tx2 := testutils.MockValidInitRip7560Tx()
+	tx2.MaxPriorityFeePerGas = (*hexutil.Big)(big.NewInt(0).Add((*big.Int)(tx1.MaxPriorityFeePerGas), common.Big1))
 
-	if err := mem.AddOp(op1); err != nil {
+	if err := mem.AddTx(tx1); err != nil {
 		t.Fatalf("got %v, want nil", err)
 	}
-	if err := mem.AddOp(op2); err != nil {
+	if err := mem.AddTx(tx2); err != nil {
 		t.Fatalf("got %v, want nil", err)
 	}
 
-	memOps, err := mem.GetOps(op2.Sender)
+	memTxs, err := mem.GetTxs(tx2.GetSender())
 	if err != nil {
 		t.Fatalf("got %v, want nil", err)
 	}
-	if len(memOps) != 1 {
-		t.Fatalf("got length %d, want 1", len(memOps))
+	if len(memTxs) != 1 {
+		t.Fatalf("got length %d, want 1", len(memTxs))
 	}
 
-	if !testutils.IsOpsEqual(op2, memOps[0]) {
-		t.Fatalf("ops not equal: %s", testutils.GetOpsDiff(op2, memOps[0]))
+	if !testutils.IsTxsEqual(tx2, memTxs[0]) {
+		t.Fatalf("ops not equal: %s", testutils.GetTxsDiff(tx2, memTxs[0]))
 	}
 }
 
-// TestRemoveOpsFromMempool verifies that a UserOperation can be added to the mempool and later removed.
-func TestRemoveOpsFromMempool(t *testing.T) {
+// TestRemoveTxsFromMempool verifies that a UserOperation can be added to the mempool and later removed.
+func TestRemoveTxsFromMempool(t *testing.T) {
 	db := testutils.DBMock()
 	defer db.Close()
 	mem, _ := New(db)
-	op := testutils.MockValidInitUserOp()
+	txArgs := testutils.MockValidInitRip7560Tx()
 
-	if err := mem.AddOp(op); err != nil {
+	if err := mem.AddTx(txArgs); err != nil {
 		t.Fatalf("got %v, want nil", err)
 	}
 
-	if err := mem.RemoveOps(op); err != nil {
+	if err := mem.RemoveTxs(txArgs); err != nil {
 		t.Fatalf("got %v, want nil", err)
 	}
 
-	memOps, err := mem.GetOps(op.Sender)
+	memOps, err := mem.GetTxs(txArgs.GetSender())
 	if err != nil {
 		t.Fatalf("got %v, want nil", err)
 	}
@@ -94,66 +95,66 @@ func TestDumpFromMempool(t *testing.T) {
 	defer db.Close()
 	mem, _ := New(db)
 
-	op1 := testutils.MockValidInitUserOp()
-	op1.MaxFeePerGas = big.NewInt(4)
-	op1.MaxPriorityFeePerGas = big.NewInt(3)
+	tx1 := testutils.MockValidInitRip7560Tx()
+	tx1.MaxFeePerGas = (*hexutil.Big)(big.NewInt(4))
+	tx1.MaxPriorityFeePerGas = (*hexutil.Big)(big.NewInt(3))
 
-	op2 := testutils.MockValidInitUserOp()
-	op2.Sender = testutils.ValidAddress2
-	op2.MaxFeePerGas = big.NewInt(5)
-	op2.MaxPriorityFeePerGas = big.NewInt(2)
+	tx2 := testutils.MockValidInitRip7560Tx()
+	tx2.Sender = &testutils.ValidAddress2
+	tx2.MaxFeePerGas = (*hexutil.Big)(big.NewInt(5))
+	tx2.MaxPriorityFeePerGas = (*hexutil.Big)(big.NewInt(2))
 
-	op3 := testutils.MockValidInitUserOp()
-	op3.Sender = testutils.ValidAddress3
-	op3.MaxFeePerGas = big.NewInt(6)
-	op3.MaxPriorityFeePerGas = big.NewInt(1)
+	tx3 := testutils.MockValidInitRip7560Tx()
+	tx3.Sender = &testutils.ValidAddress3
+	tx3.MaxFeePerGas = (*hexutil.Big)(big.NewInt(6))
+	tx3.MaxPriorityFeePerGas = (*hexutil.Big)(big.NewInt(1))
 
-	if err := mem.AddOp(op1); err != nil {
+	if err := mem.AddTx(tx1); err != nil {
 		t.Fatalf("got %v, want nil", err)
 	}
-	if err := mem.AddOp(op2); err != nil {
+	if err := mem.AddTx(tx2); err != nil {
 		t.Fatalf("got %v, want nil", err)
 	}
-	if err := mem.AddOp(op3); err != nil {
+	if err := mem.AddTx(tx3); err != nil {
 		t.Fatalf("got %v, want nil", err)
 	}
 
-	if memOps, err := mem.Dump(); err != nil {
+	if memTxs, err := mem.Dump(); err != nil {
 		t.Fatalf("got %v, want nil", err)
-	} else if len(memOps) != 3 {
-		t.Fatalf("got length %d, want 3", len(memOps))
-	} else if !testutils.IsOpsEqual(memOps[0], op1) {
+	} else if len(memTxs) != 3 {
+		t.Fatalf("got length %d, want 3", len(memTxs))
+	} else if !testutils.IsTxsEqual(memTxs[0], tx1) {
 		t.Fatal("incorrect order: first op out of place")
-	} else if !testutils.IsOpsEqual(memOps[1], op2) {
+	} else if !testutils.IsTxsEqual(memTxs[1], tx2) {
 		t.Fatal("incorrect order: second op out of place")
-	} else if !testutils.IsOpsEqual(memOps[2], op3) {
+	} else if !testutils.IsTxsEqual(memTxs[2], tx3) {
 		t.Fatal("incorrect order: third op out of place")
 	}
 }
 
-// TestNewMempoolLoadsFromDisk verifies that a new Mempool instance is built from ops saved in the DB without
-// including ops previously removed.
+// TestNewMempoolLoadsFromDisk verifies that a new Mempool instance is built from txs saved in the DB without
+// including txs previously removed.
 func TestNewMempoolLoadsFromDisk(t *testing.T) {
 	db := testutils.DBMock()
 	defer db.Close()
 	mem1, _ := New(db)
-	op1 := testutils.MockValidInitUserOp()
-	op2 := testutils.MockValidInitUserOp()
-	op2.Nonce = big.NewInt(0).Add(op1.Nonce, common.Big1)
-	op2.MaxPriorityFeePerGas = big.NewInt(0).Add(op1.MaxPriorityFeePerGas, common.Big1)
+	tx1 := testutils.MockValidInitRip7560Tx()
+	tx2 := testutils.MockValidInitRip7560Tx()
+	tx2.BigNonce = (*hexutil.Big)(big.NewInt(0).Add((*big.Int)(tx1.BigNonce), common.Big1))
+	tx2.MaxPriorityFeePerGas = (*hexutil.Big)(big.NewInt(0).Add((*big.Int)(tx1.MaxPriorityFeePerGas), common.Big1))
 
-	if err := mem1.AddOp(op1); err != nil {
+	if err := mem1.AddTx(tx1); err != nil {
 		t.Fatalf("got %v, want nil", err)
 	}
-	if err := mem1.AddOp(op2); err != nil {
+	if err := mem1.AddTx(tx2); err != nil {
 		t.Fatalf("got %v, want nil", err)
 	}
-	if err := mem1.RemoveOps(op1); err != nil {
+	if err := mem1.RemoveTxs(tx1); err != nil {
 		t.Fatalf("got %v, want nil", err)
 	}
 
 	mem2, _ := New(db)
-	memOps, err := mem2.GetOps(op2.Sender)
+	memOps, err := mem2.GetTxs(tx2.GetSender())
 	if err != nil {
 		t.Fatalf("got %v, want nil", err)
 	}
@@ -161,7 +162,7 @@ func TestNewMempoolLoadsFromDisk(t *testing.T) {
 		t.Fatalf("got length %d, want 1", len(memOps))
 	}
 
-	if !testutils.IsOpsEqual(op2, memOps[0]) {
-		t.Fatalf("ops not equal: %s", testutils.GetOpsDiff(op2, memOps[0]))
+	if !testutils.IsTxsEqual(tx2, memOps[0]) {
+		t.Fatalf("ops not equal: %s", testutils.GetTxsDiff(tx2, memOps[0]))
 	}
 }

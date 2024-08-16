@@ -1,6 +1,7 @@
 package gasprice
 
 import (
+	"github.com/stackup-wallet/stackup-bundler/internal/utils"
 	"sort"
 
 	"github.com/stackup-wallet/stackup-bundler/pkg/modules"
@@ -16,7 +17,7 @@ func SortByGasPrice() modules.BatchHandlerFunc {
 			})
 		} else if ctx.GasPrice != nil {
 			sort.SliceStable(ctx.Batch, func(i, j int) bool {
-				return ctx.Batch[i].MaxFeePerGas.Cmp(ctx.Batch[j].MaxFeePerGas) == 1
+				return utils.CompareHexBigWithHexBig(ctx.Batch[i].MaxFeePerGas, ctx.Batch[j].MaxFeePerGas) == 1
 			})
 		}
 

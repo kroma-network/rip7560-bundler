@@ -12,7 +12,7 @@ func SortByNonce() modules.BatchHandlerFunc {
 	return func(ctx *modules.BatchHandlerCtx) error {
 		sort.SliceStable(ctx.Batch, func(i, j int) bool {
 			return ctx.Batch[i].Sender == ctx.Batch[j].Sender &&
-				ctx.Batch[i].Nonce.Cmp(ctx.Batch[j].Nonce) == -1
+				*ctx.Batch[i].Nonce < *ctx.Batch[j].Nonce
 		})
 
 		return nil

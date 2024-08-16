@@ -6,18 +6,15 @@ import (
 	"log"
 	"net/http"
 
-	badger "github.com/dgraph-io/badger/v3"
+	"github.com/dgraph-io/badger/v3"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/stackup-wallet/stackup-bundler/internal/config"
 	"github.com/stackup-wallet/stackup-bundler/internal/logger"
-	"github.com/stackup-wallet/stackup-bundler/internal/o11y"
-	"github.com/stackup-wallet/stackup-bundler/pkg/altmempools"
 	"github.com/stackup-wallet/stackup-bundler/pkg/bundler"
 	"github.com/stackup-wallet/stackup-bundler/pkg/client"
-	"github.com/stackup-wallet/stackup-bundler/pkg/entrypoint/stake"
 	"github.com/stackup-wallet/stackup-bundler/pkg/jsonrpc"
 	"github.com/stackup-wallet/stackup-bundler/pkg/mempool"
 	"github.com/stackup-wallet/stackup-bundler/pkg/modules/batch"
@@ -25,9 +22,7 @@ import (
 	"github.com/stackup-wallet/stackup-bundler/pkg/modules/entities"
 	"github.com/stackup-wallet/stackup-bundler/pkg/modules/expire"
 	"github.com/stackup-wallet/stackup-bundler/pkg/modules/gasprice"
-	"github.com/stackup-wallet/stackup-bundler/pkg/modules/relay"
 	"github.com/stackup-wallet/stackup-bundler/pkg/signer"
-	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 	"go.opentelemetry.io/otel"
 )
 
@@ -62,32 +57,7 @@ func Rip7560Mode() {
 		log.Fatal(err)
 	}
 
-	// TODO : o11y adaptation
-	if o11y.IsEnabled(conf.OTELServiceName) {
-		o11yOpts := &o11y.Opts{
-			ServiceName:     conf.OTELServiceName,
-			CollectorHeader: conf.OTELCollectorHeaders,
-			CollectorUrl:    conf.OTELCollectorUrl,
-			InsecureMode:    conf.OTELInsecureMode,
-
-			ChainID: chain,
-			Address: eoa.Address,
-		}
-
-		tracerCleanup := o11y.InitTracer(o11yOpts)
-		defer tracerCleanup()
-
-		metricsCleanup := o11y.InitMetrics(o11yOpts)
-		defer metricsCleanup()
-	}
-
 	mem, err := mempool.New(db)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// TODO : alt needed?
-	alt, err := altmempools.NewFromIPFS(chain, conf.AltMempoolIPFSGateway, conf.AltMempoolIds)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -95,39 +65,32 @@ func Rip7560Mode() {
 	check := checks.New(
 		db,
 		rpc,
-		alt,
 		conf.MaxVerificationGas,
 		conf.MaxBatchGasLimit,
-		conf.IsRIP7212Supported,
-		conf.NativeBundlerCollectorTracer,
 		conf.ReputationConstants,
 	)
 
 	exp := expire.New(conf.MaxOpTTL)
 
-	relayer := relay.New(eoa, eth, chain, rpc, logr)
-
 	rep := entities.New(db, eth, conf.ReputationConstants)
 
 	// Init Client
 	c := client.New(mem, chain, conf.OpLookupLimit)
-	c.SetGetUserOpReceiptFunc(client.GetUserOpReceiptWithEthClient(eth))
+	c.SetGetRip7560TransactionReceiptFunc(client.GetRip7560TransactionReceiptWithEthClient(eth))
 	c.SetGetGasPricesFunc(client.GetGasPricesWithEthClient(eth))
 	c.SetGetGasEstimateFunc(
 		client.GetGasEstimateWithEthClient(
 			rpc,
 			chain,
 			conf.MaxBatchGasLimit,
-			conf.NativeBundlerExecutorTracer,
 		),
 	)
-	c.SetGetStakeFunc(stake.GetStakeWithEthClient(eth))
 	c.UseLogger(logr)
 	c.UseModules(
 		rep.CheckStatus(),
 		rep.ValidateOpLimit(),
-		check.ValidateOpValues(),
-		check.SimulateOp(),
+		check.ValidateTxValues(),
+		check.SimulateTx(),
 		rep.IncOpsSeen(),
 	)
 
@@ -145,17 +108,7 @@ func Rip7560Mode() {
 		gasprice.SortByGasPrice(),
 		gasprice.FilterUnderpriced(),
 		batch.SortByNonce(),
-		// TODO : Is this needed?
-		//batch.MaintainGasLimit(conf.MaxBatchGasLimit),
-
-		// TODO : Is this needed?
-		//check.CodeHashes(),
-		// TODO : Is this needed?
-		//check.PaymasterDeposit(),
-
-		//check.SimulateBatch(),
-		//relayer.SendUserOperation(),
-		//relayer.SendUserOperationRip7560(),
+		check.CodeHashes(),
 		rep.IncOpsIncluded(),
 		check.Clean(),
 	)
@@ -164,8 +117,6 @@ func Rip7560Mode() {
 	var d *client.Debug
 	if conf.DebugMode {
 		d = client.NewDebug(eoa, eth, mem, rep, b, chain)
-		b.SetMaxBatch(1)
-		relayer.SetWaitTimeout(0)
 	}
 
 	// Init HTTP server
@@ -173,9 +124,6 @@ func Rip7560Mode() {
 	r := gin.New()
 	if err := r.SetTrustedProxies(nil); err != nil {
 		log.Fatal(err)
-	}
-	if o11y.IsEnabled(conf.OTELServiceName) {
-		r.Use(otelgin.Middleware(conf.OTELServiceName))
 	}
 	r.Use(
 		cors.Default(),
@@ -187,7 +135,7 @@ func Rip7560Mode() {
 	})
 	handlers := []gin.HandlerFunc{
 		jsonrpc.Controller(client.NewRpcAdapter(c, b, d)),
-		jsonrpc.WithOTELTracerAttributes(),
+		//jsonrpc.WithOTELTracerAttributes(),
 	}
 	r.POST("/", handlers...)
 	r.POST("/rpc", handlers...)

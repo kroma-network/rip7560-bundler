@@ -4,15 +4,16 @@ import (
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stackup-wallet/stackup-bundler/internal/testutils"
 )
 
 // TestMFLessThanBF calls checks.ValidateFeePerGas with a MaxFeePerGas < base fee. Expect error.
 func TestMFLessThanBF(t *testing.T) {
-	op := testutils.MockValidInitUserOp()
+	op := testutils.MockValidInitRip7560Tx()
 	gbf := testutils.GetMockBaseFeeFunc(common.Big2)
-	op.MaxFeePerGas = common.Big1
-	op.MaxPriorityFeePerGas = common.Big0
+	*op.MaxFeePerGas = hexutil.Big(*common.Big1)
+	*op.MaxPriorityFeePerGas = hexutil.Big(*common.Big0)
 	err := ValidateFeePerGas(op, gbf)
 
 	if err == nil {
@@ -22,10 +23,10 @@ func TestMFLessThanBF(t *testing.T) {
 
 // TestMFEqualBF calls checks.ValidateFeePerGas with a MaxFeePerGas == base fee. Expect nil.
 func TestMFEqualBF(t *testing.T) {
-	op := testutils.MockValidInitUserOp()
+	op := testutils.MockValidInitRip7560Tx()
 	gbf := testutils.GetMockBaseFeeFunc(common.Big1)
-	op.MaxFeePerGas = common.Big1
-	op.MaxPriorityFeePerGas = common.Big0
+	*op.MaxFeePerGas = hexutil.Big(*common.Big1)
+	*op.MaxPriorityFeePerGas = hexutil.Big(*common.Big0)
 	err := ValidateFeePerGas(op, gbf)
 
 	if err != nil {
@@ -35,10 +36,10 @@ func TestMFEqualBF(t *testing.T) {
 
 // TestMFMoreThanBF calls checks.ValidateFeePerGas with a MaxFeePerGas > base fee. Expect nil.
 func TestMFMoreThanBF(t *testing.T) {
-	op := testutils.MockValidInitUserOp()
+	op := testutils.MockValidInitRip7560Tx()
 	gbf := testutils.GetMockBaseFeeFunc(common.Big1)
-	op.MaxFeePerGas = common.Big2
-	op.MaxPriorityFeePerGas = common.Big0
+	*op.MaxFeePerGas = hexutil.Big(*common.Big2)
+	*op.MaxPriorityFeePerGas = hexutil.Big(*common.Big0)
 	err := ValidateFeePerGas(op, gbf)
 
 	if err != nil {
@@ -48,10 +49,10 @@ func TestMFMoreThanBF(t *testing.T) {
 
 // TestMPFMoreThanMF calls checks.ValidateFeePerGas with a MaxPriorityFeePerGas > MaxFeePerGas. Expect error.
 func TestMPFMoreThanMF(t *testing.T) {
-	op := testutils.MockValidInitUserOp()
+	op := testutils.MockValidInitRip7560Tx()
 	gbf := testutils.GetMockBaseFeeFunc(common.Big1)
-	op.MaxFeePerGas = common.Big2
-	op.MaxPriorityFeePerGas = common.Big3
+	*op.MaxFeePerGas = hexutil.Big(*common.Big2)
+	*op.MaxPriorityFeePerGas = hexutil.Big(*common.Big3)
 	err := ValidateFeePerGas(op, gbf)
 
 	if err == nil {
@@ -61,10 +62,10 @@ func TestMPFMoreThanMF(t *testing.T) {
 
 // TestMPFEqualMF calls checks.ValidateFeePerGas with a MaxPriorityFeePerGas == MaxFeePerGas. Expect nil.
 func TestMPFEqualMF(t *testing.T) {
-	op := testutils.MockValidInitUserOp()
+	op := testutils.MockValidInitRip7560Tx()
 	gbf := testutils.GetMockBaseFeeFunc(common.Big1)
-	op.MaxFeePerGas = common.Big2
-	op.MaxPriorityFeePerGas = common.Big2
+	*op.MaxFeePerGas = hexutil.Big(*common.Big2)
+	*op.MaxPriorityFeePerGas = hexutil.Big(*common.Big2)
 	err := ValidateFeePerGas(op, gbf)
 
 	if err != nil {
@@ -74,10 +75,10 @@ func TestMPFEqualMF(t *testing.T) {
 
 // TestMPFLessThanMF calls checks.ValidateFeePerGas with a MaxPriorityFeePerGas < MaxFeePerGas. Expect nil.
 func TestMPFLessThanMF(t *testing.T) {
-	op := testutils.MockValidInitUserOp()
+	op := testutils.MockValidInitRip7560Tx()
 	gbf := testutils.GetMockBaseFeeFunc(common.Big1)
-	op.MaxFeePerGas = common.Big2
-	op.MaxPriorityFeePerGas = common.Big1
+	*op.MaxFeePerGas = hexutil.Big(*common.Big2)
+	*op.MaxPriorityFeePerGas = hexutil.Big(*common.Big1)
 	err := ValidateFeePerGas(op, gbf)
 
 	if err != nil {

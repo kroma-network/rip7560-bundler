@@ -1,30 +1,29 @@
 package expire
 
 import (
+	"github.com/stackup-wallet/stackup-bundler/pkg/rip7560/transaction"
 	"testing"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stackup-wallet/stackup-bundler/internal/testutils"
 	"github.com/stackup-wallet/stackup-bundler/pkg/modules"
-	"github.com/stackup-wallet/stackup-bundler/pkg/userop"
 )
 
 // TestDropExpired calls (*ExpireHandler).DropExpired and verifies that it marks old UserOperations for
 // pending removal.
 func TestDropExpired(t *testing.T) {
 	exp := New(time.Second * 30)
-	op1 := testutils.MockValidInitUserOp()
-	op2 := testutils.MockValidInitUserOp()
-	op2.CallData = common.Hex2Bytes("0xdead")
+	tx1 := testutils.MockValidInitRip7560Tx()
+	tx2 := testutils.MockValidInitRip7560Tx()
+	*tx2.Data = common.Hex2Bytes("0xdead")
 	exp.seenAt = map[common.Hash]time.Time{
-		op1.GetUserOpHash(testutils.ValidAddress1, common.Big1): time.Now().Add(time.Second * -45),
-		op2.GetUserOpHash(testutils.ValidAddress1, common.Big1): time.Now().Add(time.Second * -15),
+		tx1.ToTransaction().Hash(): time.Now().Add(time.Second * -45),
+		tx2.ToTransaction().Hash(): time.Now().Add(time.Second * -15),
 	}
 
 	ctx := modules.NewBatchHandlerContext(
-		[]*userop.UserOperation{op1, op2},
-		testutils.ValidAddress1,
+		[]*transaction.TransactionArgs{tx1, tx2},
 		testutils.ChainID,
 		nil,
 		nil,
@@ -36,10 +35,10 @@ func TestDropExpired(t *testing.T) {
 		t.Fatalf("got batch length %d, want 1", len(ctx.Batch))
 	} else if len(ctx.PendingRemoval) != 1 {
 		t.Fatalf("got pending removal length %d, want 1", len(ctx.Batch))
-	} else if !testutils.IsOpsEqual(ctx.Batch[0], op2) {
-		t.Fatal("incorrect batch: Dropped legit op")
-	} else if !testutils.IsOpsEqual(ctx.PendingRemoval[0].Op, op1) {
-		t.Fatal("incorrect pending removal: Didn't drop bad op")
+	} else if !testutils.IsTxsEqual(ctx.Batch[0], tx2) {
+		t.Fatal("incorrect batch: Dropped legit tx")
+	} else if !testutils.IsTxsEqual(ctx.PendingRemoval[0].Tx, tx1) {
+		t.Fatal("incorrect pending removal: Didn't drop bad tx")
 	}
 
 }

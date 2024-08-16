@@ -1,286 +1,166 @@
 package modules
 
 import (
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/stackup-wallet/stackup-bundler/pkg/rip7560/transaction"
 	"math/big"
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stackup-wallet/stackup-bundler/internal/testutils"
-	"github.com/stackup-wallet/stackup-bundler/pkg/entrypoint"
-	"github.com/stackup-wallet/stackup-bundler/pkg/entrypoint/stake"
 	"github.com/stackup-wallet/stackup-bundler/pkg/mempool"
-	"github.com/stackup-wallet/stackup-bundler/pkg/userop"
 )
 
-func TestNoPendingOps(t *testing.T) {
+func TestNoPendingTxs(t *testing.T) {
 	db := testutils.DBMock()
 	defer db.Close()
 	mem, _ := mempool.New(db)
-	op := testutils.MockValidInitUserOp()
-	op.InitCode = []byte{}
-	op.PaymasterAndData = []byte{}
+	tx := testutils.MockValidInitRip7560Tx()
+	*tx.DeployerData = []byte{}
+	*tx.PaymasterData = []byte{}
 
-	ctx, err := NewUserOpHandlerContext(
-		op,
-		testutils.ValidAddress5,
+	ctx, err := NewTxHandlerContext(
+		tx,
 		testutils.ChainID,
 		mem,
-		stake.GetStakeFuncNoop(),
 	)
 	if err != nil {
 		t.Fatalf("init failed: %v", err)
-	} else if pso := ctx.GetPendingSenderOps(); len(pso) != 0 {
-		t.Fatalf("pending sender ops: want 0, got %d", len(pso))
-	} else if pfo := ctx.GetPendingFactoryOps(); len(pfo) != 0 {
-		t.Fatalf("pending factory ops: want 0, got %d", len(pfo))
-	} else if ppo := ctx.GetPendingPaymasterOps(); len(ppo) != 0 {
+	} else if pso := ctx.GetPendingSenderTxs(); len(pso) != 0 {
+		t.Fatalf("pending sender txs: want 0, got %d", len(pso))
+	} else if pfo := ctx.GetPendingFactoryTxs(); len(pfo) != 0 {
+		t.Fatalf("pending deployer txs: want 0, got %d", len(pfo))
+	} else if ppo := ctx.GetPendingPaymasterTxs(); len(ppo) != 0 {
 		t.Fatalf("pending paymaster ops: want 0, got %d", len(ppo))
 	}
 }
 
-func TestGetPendingSenderOps(t *testing.T) {
+func TestGetPendingSenderTxs(t *testing.T) {
 	db := testutils.DBMock()
 	defer db.Close()
 	mem, _ := mempool.New(db)
-	op := testutils.MockValidInitUserOp()
-	op.InitCode = []byte{}
-	op.PaymasterAndData = []byte{}
+	tx := testutils.MockValidInitRip7560Tx()
+	*tx.DeployerData = []byte{}
+	*tx.PaymasterData = []byte{}
 
-	penOp1 := testutils.MockValidInitUserOp()
-	_ = mem.AddOp(testutils.ValidAddress5, penOp1)
+	penTx1 := testutils.MockValidInitRip7560Tx()
+	_ = mem.AddTx(penTx1)
 
-	penOp2 := testutils.MockValidInitUserOp()
-	penOp2.Nonce = big.NewInt(0).Add(penOp1.Nonce, common.Big1)
-	_ = mem.AddOp(testutils.ValidAddress5, penOp2)
+	penTx2 := testutils.MockValidInitRip7560Tx()
+	*penTx2.BigNonce = (hexutil.Big)(*big.NewInt(0).Add((*big.Int)(penTx1.BigNonce), common.Big1))
+	_ = mem.AddTx(penTx2)
 
-	penOp3 := testutils.MockValidInitUserOp()
-	penOp3.Nonce = big.NewInt(0).Add(penOp2.Nonce, common.Big1)
-	_ = mem.AddOp(testutils.ValidAddress5, penOp3)
+	penTx3 := testutils.MockValidInitRip7560Tx()
+	*penTx3.BigNonce = (hexutil.Big)(*big.NewInt(0).Add((*big.Int)(penTx2.BigNonce), common.Big1))
+	_ = mem.AddTx(penTx3)
 
-	ctx, err := NewUserOpHandlerContext(
-		op,
-		testutils.ValidAddress5,
+	ctx, err := NewTxHandlerContext(
+		tx,
 		testutils.ChainID,
 		mem,
-		stake.GetStakeFuncNoop(),
 	)
 	if err != nil {
 		t.Fatalf("init failed: %v", err)
 	}
-
-	expectedPenOps := []*userop.UserOperation{penOp3, penOp2, penOp1}
-	penOps := ctx.GetPendingSenderOps()
-	if len(penOps) != len(expectedPenOps) {
-		t.Fatalf("got length %d, want %d", len(penOps), len(expectedPenOps))
+	expectedPenTxs := []*transaction.TransactionArgs{penTx3, penTx2, penTx1}
+	penTxs := ctx.GetPendingSenderTxs()
+	if len(penTxs) != len(expectedPenTxs) {
+		t.Fatalf("got length %d, want %d", len(penTxs), len(expectedPenTxs))
 	}
 
-	for i, penOp := range penOps {
-		if !testutils.IsOpsEqual(penOp, expectedPenOps[i]) {
-			t.Fatalf("ops not equal: %s", testutils.GetOpsDiff(penOp, expectedPenOps[i]))
+	for i, penOp := range penTxs {
+		if !testutils.IsTxsEqual(penOp, expectedPenTxs[i]) {
+			t.Fatalf("ops not equal: %s", testutils.GetTxsDiff(penOp, expectedPenTxs[i]))
 		}
 	}
 }
 
-func TestGetPendingFactoryOps(t *testing.T) {
+func TestGetPendingFactoryTxs(t *testing.T) {
 	db := testutils.DBMock()
 	defer db.Close()
 	mem, _ := mempool.New(db)
-	op := testutils.MockValidInitUserOp()
-	op.InitCode = testutils.ValidAddress4.Bytes()
-	op.PaymasterAndData = []byte{}
+	tx := testutils.MockValidInitRip7560Tx()
+	*tx.DeployerData = []byte{}
+	*tx.PaymasterData = []byte{}
 
-	penOp1 := testutils.MockValidInitUserOp()
-	penOp1.Sender = testutils.ValidAddress1
-	penOp1.InitCode = testutils.ValidAddress4.Bytes()
-	_ = mem.AddOp(testutils.ValidAddress5, penOp1)
+	penTx1 := testutils.MockValidInitRip7560Tx()
+	*penTx1.Sender = testutils.ValidAddress1
+	*penTx1.DeployerData = testutils.DummyDeployerData
+	_ = mem.AddTx(penTx1)
 
-	penOp2 := testutils.MockValidInitUserOp()
-	penOp2.Sender = testutils.ValidAddress2
-	penOp2.InitCode = testutils.ValidAddress4.Bytes()
-	_ = mem.AddOp(testutils.ValidAddress5, penOp2)
+	penTx2 := testutils.MockValidInitRip7560Tx()
+	*penTx2.Sender = testutils.ValidAddress2
+	*penTx2.DeployerData = testutils.DummyDeployerData
+	_ = mem.AddTx(penTx2)
 
-	penOp3 := testutils.MockValidInitUserOp()
-	penOp3.Sender = testutils.ValidAddress3
-	penOp3.InitCode = testutils.ValidAddress4.Bytes()
-	_ = mem.AddOp(testutils.ValidAddress5, penOp3)
+	penTx3 := testutils.MockValidInitRip7560Tx()
+	*penTx3.Sender = testutils.ValidAddress3
+	*penTx3.DeployerData = testutils.DummyDeployerData
+	_ = mem.AddTx(penTx3)
 
-	ctx, err := NewUserOpHandlerContext(
-		op,
-		testutils.ValidAddress5,
+	ctx, err := NewTxHandlerContext(
+		tx,
 		testutils.ChainID,
 		mem,
-		stake.GetStakeFuncNoop(),
 	)
 	if err != nil {
 		t.Fatalf("init failed: %v", err)
 	}
 
-	expectedPenOps := []*userop.UserOperation{penOp3, penOp2, penOp1}
-	penOps := ctx.GetPendingFactoryOps()
-	if len(penOps) != len(expectedPenOps) {
-		t.Fatalf("got length %d, want %d", len(penOps), len(expectedPenOps))
+	expectedPenTxs := []*transaction.TransactionArgs{penTx3, penTx2, penTx1}
+	penTxs := ctx.GetPendingSenderTxs()
+	if len(penTxs) != len(expectedPenTxs) {
+		t.Fatalf("got length %d, want %d", len(penTxs), len(expectedPenTxs))
 	}
 
-	for i, penOp := range penOps {
-		if !testutils.IsOpsEqual(penOp, expectedPenOps[i]) {
-			t.Fatalf("ops not equal: %s", testutils.GetOpsDiff(penOp, expectedPenOps[i]))
+	for i, penTx := range penTxs {
+		if !testutils.IsTxsEqual(penTx, expectedPenTxs[i]) {
+			t.Fatalf("ops not equal: %s", testutils.GetTxsDiff(penTx, expectedPenTxs[i]))
 		}
 	}
 }
 
-func TestGetPendingPaymasterOps(t *testing.T) {
+func TestGetPendingPaymasterTxs(t *testing.T) {
 	db := testutils.DBMock()
 	defer db.Close()
 	mem, _ := mempool.New(db)
-	op := testutils.MockValidInitUserOp()
-	op.InitCode = []byte{}
-	op.PaymasterAndData = testutils.ValidAddress4.Bytes()
+	tx := testutils.MockValidInitRip7560Tx()
+	*tx.DeployerData = []byte{}
+	*tx.PaymasterData = []byte{}
 
-	penOp1 := testutils.MockValidInitUserOp()
-	penOp1.Sender = testutils.ValidAddress1
-	penOp1.PaymasterAndData = testutils.ValidAddress4.Bytes()
-	_ = mem.AddOp(testutils.ValidAddress5, penOp1)
+	penTx1 := testutils.MockValidInitRip7560Tx()
+	*penTx1.Sender = testutils.ValidAddress1
+	*penTx1.PaymasterData = testutils.DummyPaymasterData
+	_ = mem.AddTx(penTx1)
 
-	penOp2 := testutils.MockValidInitUserOp()
-	penOp2.Sender = testutils.ValidAddress2
-	penOp2.PaymasterAndData = testutils.ValidAddress4.Bytes()
-	_ = mem.AddOp(testutils.ValidAddress5, penOp2)
+	penTx2 := testutils.MockValidInitRip7560Tx()
+	*penTx2.Sender = testutils.ValidAddress2
+	*penTx2.PaymasterData = testutils.DummyPaymasterData
+	_ = mem.AddTx(penTx2)
 
-	penOp3 := testutils.MockValidInitUserOp()
-	penOp3.Sender = testutils.ValidAddress3
-	penOp3.PaymasterAndData = testutils.ValidAddress4.Bytes()
-	_ = mem.AddOp(testutils.ValidAddress5, penOp3)
+	penTx3 := testutils.MockValidInitRip7560Tx()
+	*penTx3.Sender = testutils.ValidAddress3
+	*penTx3.PaymasterData = testutils.DummyPaymasterData
+	_ = mem.AddTx(penTx3)
 
-	ctx, err := NewUserOpHandlerContext(
-		op,
-		testutils.ValidAddress5,
+	ctx, err := NewTxHandlerContext(
+		tx,
 		testutils.ChainID,
 		mem,
-		stake.GetStakeFuncNoop(),
 	)
 	if err != nil {
 		t.Fatalf("init failed: %v", err)
 	}
 
-	expectedPenOps := []*userop.UserOperation{penOp3, penOp2, penOp1}
-	penOps := ctx.GetPendingPaymasterOps()
-	if len(penOps) != len(expectedPenOps) {
-		t.Fatalf("got length %d, want %d", len(penOps), len(expectedPenOps))
+	expectedPenTxs := []*transaction.TransactionArgs{penTx3, penTx2, penTx1}
+	penTxs := ctx.GetPendingSenderTxs()
+	if len(penTxs) != len(expectedPenTxs) {
+		t.Fatalf("got length %d, want %d", len(penTxs), len(expectedPenTxs))
 	}
 
-	for i, penOp := range penOps {
-		if !testutils.IsOpsEqual(penOp, expectedPenOps[i]) {
-			t.Fatalf("ops not equal: %s", testutils.GetOpsDiff(penOp, expectedPenOps[i]))
+	for i, penTx := range penTxs {
+		if !testutils.IsTxsEqual(penTx, expectedPenTxs[i]) {
+			t.Fatalf("txs not equal: %s", testutils.GetTxsDiff(penTx, expectedPenTxs[i]))
 		}
-	}
-}
-
-func TestNilDepositInfo(t *testing.T) {
-	db := testutils.DBMock()
-	defer db.Close()
-	mem, _ := mempool.New(db)
-	op := testutils.MockValidInitUserOp()
-	op.InitCode = []byte{}
-	op.PaymasterAndData = []byte{}
-
-	ctx, err := NewUserOpHandlerContext(
-		op,
-		testutils.ValidAddress5,
-		testutils.ChainID,
-		mem,
-		func(entryPoint, entity common.Address) (*entrypoint.IStakeManagerDepositInfo, error) {
-			if entity == op.Sender {
-				return testutils.NonStakedZeroDepositInfo, nil
-			}
-			return nil, nil
-		},
-	)
-	if err != nil {
-		t.Fatalf("init failed: %v", err)
-	} else if fd := ctx.GetFactoryDepositInfo(); fd != nil {
-		t.Fatalf("factory: want nil, got %v", fd)
-	} else if pd := ctx.GetPaymasterDepositInfo(); pd != nil {
-		t.Fatalf("paymaster: want nil, got %v", pd)
-	}
-}
-
-func TestGetSenderDepositInfo(t *testing.T) {
-	db := testutils.DBMock()
-	defer db.Close()
-	mem, _ := mempool.New(db)
-	op := testutils.MockValidInitUserOp()
-	op.InitCode = []byte{}
-	op.PaymasterAndData = []byte{}
-
-	ctx, err := NewUserOpHandlerContext(
-		op,
-		testutils.ValidAddress5,
-		testutils.ChainID,
-		mem,
-		func(entryPoint, entity common.Address) (*entrypoint.IStakeManagerDepositInfo, error) {
-			if entity == op.Sender {
-				return testutils.NonStakedZeroDepositInfo, nil
-			}
-			return nil, nil
-		},
-	)
-	if err != nil {
-		t.Fatalf("init failed: %v", err)
-	} else if dep := ctx.GetSenderDepositInfo(); dep != testutils.NonStakedZeroDepositInfo {
-		t.Fatalf("want %p, got %p", testutils.NonStakedZeroDepositInfo, dep)
-	}
-}
-
-func TestGetFactoryDepositInfo(t *testing.T) {
-	db := testutils.DBMock()
-	defer db.Close()
-	mem, _ := mempool.New(db)
-	op := testutils.MockValidInitUserOp()
-	op.InitCode = testutils.ValidAddress1.Bytes()
-	op.PaymasterAndData = []byte{}
-
-	ctx, err := NewUserOpHandlerContext(
-		op,
-		testutils.ValidAddress5,
-		testutils.ChainID,
-		mem,
-		func(entryPoint, entity common.Address) (*entrypoint.IStakeManagerDepositInfo, error) {
-			if entity == testutils.ValidAddress1 {
-				return testutils.NonStakedZeroDepositInfo, nil
-			}
-			return nil, nil
-		},
-	)
-	if err != nil {
-		t.Fatalf("init failed: %v", err)
-	} else if dep := ctx.GetFactoryDepositInfo(); dep != testutils.NonStakedZeroDepositInfo {
-		t.Fatalf("want %p, got %p", testutils.NonStakedZeroDepositInfo, dep)
-	}
-}
-
-func TestGetPaymasterDepositInfo(t *testing.T) {
-	db := testutils.DBMock()
-	defer db.Close()
-	mem, _ := mempool.New(db)
-	op := testutils.MockValidInitUserOp()
-	op.InitCode = []byte{}
-	op.PaymasterAndData = testutils.ValidAddress1.Bytes()
-
-	ctx, err := NewUserOpHandlerContext(
-		op,
-		testutils.ValidAddress5,
-		testutils.ChainID,
-		mem,
-		func(entryPoint, entity common.Address) (*entrypoint.IStakeManagerDepositInfo, error) {
-			if entity == testutils.ValidAddress1 {
-				return testutils.NonStakedZeroDepositInfo, nil
-			}
-			return nil, nil
-		},
-	)
-	if err != nil {
-		t.Fatalf("init failed: %v", err)
-	} else if dep := ctx.GetPaymasterDepositInfo(); dep != testutils.NonStakedZeroDepositInfo {
-		t.Fatalf("want %p, got %p", testutils.NonStakedZeroDepositInfo, dep)
 	}
 }

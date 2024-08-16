@@ -3,22 +3,25 @@
 package mempool
 
 import (
+	"bytes"
+	"fmt"
 	badger "github.com/dgraph-io/badger/v3"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/stackup-wallet/stackup-bundler/pkg/userop"
+	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/stackup-wallet/stackup-bundler/pkg/rip7560/transaction"
 )
 
-// Mempool provides read and write access to a pool of pending UserOperations which have passed all Client
+// Mempool provides read and write access to a pool of pending AA Transactions which have passed all Client
 // checks.
 type Mempool struct {
 	db    *badger.DB
-	queue *userOpQueues
+	queue *rip7560TxQueues
 }
 
-// New creates an instance of a mempool that uses an embedded DB to persist and load UserOperations from disk
+// New creates an instance of a mempool that uses an embedded DB to persist and load AA Transactions from disk
 // incase of a reset.
 func New(db *badger.DB) (*Mempool, error) {
-	queue := newUserOpQueue()
+	queue := newRip7560TxQueue()
 	err := loadFromDisk(db, queue)
 	if err != nil {
 		return nil, err
@@ -27,36 +30,39 @@ func New(db *badger.DB) (*Mempool, error) {
 	return &Mempool{db, queue}, nil
 }
 
-// GetOps returns all the UserOperations associated with an EntryPoint and Sender address.
-func (m *Mempool) GetOps(sender common.Address) ([]*userop.UserOperation, error) {
-	ops := m.queue.GetOps(sender)
-	return ops, nil
+// GetTxs returns all the AA Transactions associated with Sender address.
+func (m *Mempool) GetTxs(sender common.Address) ([]*transaction.TransactionArgs, error) {
+	if sender == (common.Address{}) {
+		return []*transaction.TransactionArgs{}, nil
+	}
+	txs := m.queue.GetTxs(sender)
+	return txs, nil
 }
 
-// AddOp adds a UserOperation to the mempool or replace an existing one with the same EntryPoint, Sender, and
+// AddTx adds a AA Transaction to the mempool or replace an existing one with the Sender, and
 // Nonce values.
-func (m *Mempool) AddOp(op *userop.UserOperation) error {
-	data, err := op.MarshalJSON()
+func (m *Mempool) AddTx(tx *transaction.TransactionArgs) error {
+	var buf bytes.Buffer
+	err := rlp.Encode(&buf, tx)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to RLP encode transaction: %v", err)
 	}
-
 	err = m.db.Update(func(txn *badger.Txn) error {
-		return txn.Set(getUniqueKey(op.Sender, op.Nonce), data)
+		return txn.Set(getUniqueKey(tx.GetSender(), tx.BigNonce), buf.Bytes())
 	})
 	if err != nil {
 		return err
 	}
 
-	m.queue.AddOp(op)
+	m.queue.AddTx(tx)
 	return nil
 }
 
-// RemoveOps removes a list of UserOperations from the mempool by EntryPoint, Sender, and Nonce values.
-func (m *Mempool) RemoveOps(ops ...*userop.UserOperation) error {
+// RemoveTxs removes a list of AA Transactions from the mempool by Sender, and Nonce values.
+func (m *Mempool) RemoveTxs(txs ...*transaction.TransactionArgs) error {
 	err := m.db.Update(func(txn *badger.Txn) error {
-		for _, op := range ops {
-			err := txn.Delete(getUniqueKey(op.Sender, op.Nonce))
+		for _, tx := range txs {
+			err := txn.Delete(getUniqueKey(tx.GetSender(), tx.BigNonce))
 			if err != nil {
 				return err
 			}
@@ -68,12 +74,12 @@ func (m *Mempool) RemoveOps(ops ...*userop.UserOperation) error {
 		return err
 	}
 
-	m.queue.RemoveOps(ops...)
+	m.queue.RemoveTxs(txs...)
 	return nil
 }
 
-// Dump will return a list of UserOperations from the mempool by EntryPoint in the order it arrived.
-func (m *Mempool) Dump() ([]*userop.UserOperation, error) {
+// Dump will return a list of AA Transactions from the mempool by EntryPoint in the order it arrived.
+func (m *Mempool) Dump() ([]*transaction.TransactionArgs, error) {
 	return m.queue.All(), nil
 }
 
@@ -82,7 +88,7 @@ func (m *Mempool) Clear() error {
 	if err := m.db.DropAll(); err != nil {
 		return err
 	}
-	m.queue = newUserOpQueue()
+	m.queue = newRip7560TxQueue()
 
 	return nil
 }

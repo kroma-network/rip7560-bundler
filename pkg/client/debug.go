@@ -2,6 +2,7 @@ package client
 
 import (
 	"encoding/json"
+	"github.com/stackup-wallet/stackup-bundler/pkg/rip7560/transaction"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -41,29 +42,31 @@ func (d *Debug) ClearState() (string, error) {
 	return "ok", nil
 }
 
-// DumpMempool dumps the current UserOperations mempool in order of arrival.
-func (d *Debug) DumpMempool(ep string) ([]map[string]any, error) {
-	ops, err := d.mempool.Dump()
+// DumpMempool dumps the current RIP-7560 transactions mempool in order of arrival.
+func (d *Debug) DumpMempool() ([]*transaction.TransactionArgs, error) {
+	txs, err := d.mempool.Dump()
 	if err != nil {
-		return []map[string]any{}, err
+		return []*transaction.TransactionArgs{}, err
 	}
 
-	res := []map[string]any{}
-	for _, op := range ops {
-		data, err := op.MarshalJSON()
-		if err != nil {
-			return []map[string]any{}, err
-		}
+	return txs, nil
 
-		item := make(map[string]any)
-		if err := json.Unmarshal(data, &item); err != nil {
-			return []map[string]any{}, err
-		}
-
-		res = append(res, item)
-	}
-
-	return res, nil
+	//res := []map[string]any{}
+	//for _, tx := range txs {
+	//	data, err := tx.MarshalJSON()
+	//	if err != nil {
+	//		return []map[string]any{}, err
+	//	}
+	//
+	//	item := make(map[string]any)
+	//	if err := json.Unmarshal(data, &item); err != nil {
+	//		return []map[string]any{}, err
+	//	}
+	//
+	//	res = append(res, item)
+	//}
+	//
+	//return res, nil
 }
 
 // SendBundleNow forces the bundler to build and execute a bundle from the mempool as handleOps() transaction.

@@ -2,9 +2,8 @@ package checks
 
 import (
 	"fmt"
+	"github.com/stackup-wallet/stackup-bundler/pkg/rip7560/transaction"
 	"math/big"
-
-	"github.com/stackup-wallet/stackup-bundler/pkg/userop"
 )
 
 var (
@@ -28,26 +27,26 @@ func calcNewThresholds(cap *big.Int, tip *big.Int) (newCap *big.Int, newTip *big
 	return newCap, newTip
 }
 
-// ValidatePendingOps checks the pending UserOperations by the same sender and only passes if:
+// ValidatePendingTxs checks the pending Transactions by the same sender and only passes if:
 //
-//  1. Sender doesn't have another UserOperation already present in the pool.
-//  2. It replaces an existing UserOperation with same nonce and higher fee.
-func ValidatePendingOps(
-	op *userop.UserOperation,
-	penOps []*userop.UserOperation,
+//  1. Sender doesn't have another Transactions already present in the pool.
+//  2. It replaces an existing Transactions with same nonce and higher fee.
+func ValidatePendingTxs(
+	tx *transaction.TransactionArgs,
+	penTxs []*transaction.TransactionArgs,
 ) error {
-	if len(penOps) > 0 {
-		var oldOp *userop.UserOperation
-		for _, penOp := range penOps {
-			if op.Nonce.Cmp(penOp.Nonce) == 0 {
-				oldOp = penOp
+	if len(penTxs) > 0 {
+		var oldTx *transaction.TransactionArgs
+		for _, penTx := range penTxs {
+			if tx.Nonce == penTx.Nonce {
+				oldTx = penTx
 			}
 		}
 
-		if oldOp != nil {
-			newMf, newMpf := calcNewThresholds(oldOp.MaxFeePerGas, oldOp.MaxPriorityFeePerGas)
+		if oldTx != nil {
+			newMf, newMpf := calcNewThresholds(oldTx.MaxFeePerGas.ToInt(), oldTx.MaxPriorityFeePerGas.ToInt())
 
-			if op.MaxFeePerGas.Cmp(newMf) < 0 || op.MaxPriorityFeePerGas.Cmp(newMpf) < 0 {
+			if tx.MaxFeePerGas.ToInt().Cmp(newMf) < 0 || tx.MaxPriorityFeePerGas.ToInt().Cmp(newMpf) < 0 {
 				return ErrReplacementOpUnderpriced
 			}
 		}

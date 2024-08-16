@@ -2,35 +2,31 @@
 package client
 
 import (
-	"math/big"
-	"strconv"
-
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/go-logr/logr"
 	"github.com/stackup-wallet/stackup-bundler/internal/logger"
-	"github.com/stackup-wallet/stackup-bundler/pkg/entrypoint/stake"
 	"github.com/stackup-wallet/stackup-bundler/pkg/gas"
 	"github.com/stackup-wallet/stackup-bundler/pkg/mempool"
 	"github.com/stackup-wallet/stackup-bundler/pkg/modules"
 	"github.com/stackup-wallet/stackup-bundler/pkg/modules/noop"
+	"github.com/stackup-wallet/stackup-bundler/pkg/rip7560/transaction"
 	"github.com/stackup-wallet/stackup-bundler/pkg/state"
-	"github.com/stackup-wallet/stackup-bundler/pkg/userop"
+	"math/big"
 )
 
 // Client controls the end to end process of adding incoming UserOperations to the mempool. It also
 // implements the required RPC methods as specified in EIP-4337.
 type Client struct {
-	mempool          *mempool.Mempool
-	chainID          *big.Int
-	userOpHandler    modules.UserOpHandlerFunc
-	logger           logr.Logger
-	getUserOpReceipt GetUserOpReceiptFunc
-	getGasPrices     GetGasPricesFunc
-	getGasEstimate   GetGasEstimateFunc
-	getStakeFunc     stake.GetStakeFunc
-	opLookupLimit    uint64
+	mempool             *mempool.Mempool
+	chainID             *big.Int
+	rip7560TxHandler    modules.Rip7560TxHandlerFunc
+	logger              logr.Logger
+	getRip7560TxReceipt GetRip7560TxReceiptFunc
+	getGasPrices        GetGasPricesFunc
+	getGasEstimate      GetGasEstimateFunc
+	opLookupLimit       uint64
 }
 
 // New initializes a new ERC-4337 client which can be extended with modules for validating UserOperations
@@ -41,15 +37,14 @@ func New(
 	opLookupLimit uint64,
 ) *Client {
 	return &Client{
-		mempool:          mempool,
-		chainID:          chainID,
-		userOpHandler:    noop.UserOpHandler,
-		logger:           logger.NewZeroLogr().WithName("client"),
-		getUserOpReceipt: getUserOpReceiptNoop(),
-		getGasPrices:     getGasPricesNoop(),
-		getGasEstimate:   getGasEstimateNoop(),
-		getStakeFunc:     stake.GetStakeFuncNoop(),
-		opLookupLimit:    opLookupLimit,
+		mempool:             mempool,
+		chainID:             chainID,
+		rip7560TxHandler:    noop.Rip7560TxHandler,
+		logger:              logger.NewZeroLogr().WithName("client"),
+		getRip7560TxReceipt: getRip7560TxReceiptNoop(),
+		getGasPrices:        getGasPricesNoop(),
+		getGasEstimate:      getGasEstimateNoop(),
+		opLookupLimit:       opLookupLimit,
 	}
 }
 
@@ -59,18 +54,18 @@ func (i *Client) UseLogger(logger logr.Logger) {
 }
 
 // UseModules defines the UserOpHandlers to process a userOp after it has gone through the standard checks.
-func (i *Client) UseModules(handlers ...modules.UserOpHandlerFunc) {
-	i.userOpHandler = modules.ComposeUserOpHandlerFunc(handlers...)
+func (i *Client) UseModules(handlers ...modules.Rip7560TxHandlerFunc) {
+	i.rip7560TxHandler = modules.ComposeUserOpHandlerFunc(handlers...)
 }
 
 // SetGetUserOpRip7560ReceiptFunc defines a general function for fetching a UserOpReceipt given a userOpHash and
-// EntryPoint address. This function is called in *Client.GetUserOperationReceipt.
-func (i *Client) SetGetUserOpReceiptFunc(fn GetUserOpReceiptFunc) {
-	i.getUserOpReceipt = fn
+// EntryPoint address. This function is called in *Client.GetRip7560TransactionReceipt.
+func (i *Client) SetGetRip7560TransactionReceiptFunc(fn GetRip7560TxReceiptFunc) {
+	i.getRip7560TxReceipt = fn
 }
 
 // SetGetGasPricesFunc defines a general function for fetching values for maxFeePerGas and
-// maxPriorityFeePerGas. This function is called in *Client.EstimateUserOperationGas if given fee values are
+// maxPriorityFeePerGas. This function is called in *Client.EstimateRip7560TransactionGas if given fee values are
 // 0.
 func (i *Client) SetGetGasPricesFunc(fn GetGasPricesFunc) {
 	i.getGasPrices = fn
@@ -78,206 +73,114 @@ func (i *Client) SetGetGasPricesFunc(fn GetGasPricesFunc) {
 
 // SetGetGasEstimateFunc defines a general function for fetching an estimate for verificationGasLimit and
 // callGasLimit given a userOp and EntryPoint address. This function is called in
-// *Client.EstimateUserOperationGas.
+// *Client.EstimateRip7560TransactionGas.
 func (i *Client) SetGetGasEstimateFunc(fn GetGasEstimateFunc) {
 	i.getGasEstimate = fn
 }
 
-// SetGetStakeFunc defines a general function for retrieving the EntryPoint stake for a given address. This
-// function is called in *Client.SendUserOperation to create a context.
-func (i *Client) SetGetStakeFunc(fn stake.GetStakeFunc) {
-	i.getStakeFunc = fn
-}
-
-// SendUserOperation implements the method call for eth_sendUserOperation.
-// It returns true if userOp was accepted otherwise returns an error.
-func (i *Client) SendUserOperation(op map[string]any) (string, error) {
+// SendRip7560Transaction implements the method call for eth_sendRip7560Transaction.
+// It returns true if Rip7560Transaction was accepted otherwise returns an error.
+func (i *Client) SendRip7560Transaction(txArgs *transaction.TransactionArgs) (string, error) {
 	// Init logger
-	l := i.logger.WithName("eth_sendUserOperation")
+	l := i.logger.WithName("eth_sendRip7560Transaction")
 	l = l.WithValues("chain_id", i.chainID.String())
 
-	userOp, err := userop.New(op)
-	if err != nil {
-		l.Error(err, "eth_sendUserOperation error")
-		return "", err
-	}
-
-	txHash, err := getTransactionHashByUserOp(op)
-	if err != nil {
-		l.Error(err, "getTransactionHashByUserOp error")
-		return "", err
-	}
-	l = l.WithValues("txHash", txHash)
+	tx := txArgs.ToTransaction()
+	l = l.WithValues("txHash", tx.Hash())
 
 	// Run through client module stack.
-	ctx, err := modules.NewUserOpHandlerContext(
-		userOp,
+	ctx, err := modules.NewTxHandlerContext(
+		txArgs,
 		i.chainID,
 		i.mempool,
-		i.getStakeFunc,
 	)
 	if err != nil {
-		l.Error(err, "eth_sendUserOperation error")
+		l.Error(err, "eth_sendRip7560Transaction error")
 		return "", err
 	}
-	if err := i.userOpHandler(ctx); err != nil {
-		l.Error(err, "eth_sendUserOperation error")
-		return "", err
-	}
-
-	// Add userOp to mempool.
-	if err := i.mempool.AddOp(ctx.UserOp); err != nil {
-		l.Error(err, "eth_sendUserOperation error")
+	if err := i.rip7560TxHandler(ctx); err != nil {
+		l.Error(err, "eth_sendRip7560Transaction error")
 		return "", err
 	}
 
-	l.Info("eth_sendUserOperation ok")
-	return txHash.Hex(), nil
+	// Add Rip-7560 transaction to mempool.
+	if err := i.mempool.AddTx(ctx.Tx); err != nil {
+		l.Error(err, "eth_sendRip7560Transaction error")
+		return "", err
+	}
+
+	l.Info("eth_sendRip7560Transaction ok")
+	return tx.Hash().String(), nil
 }
 
-// EstimateUserOperationGas returns estimates for PreVerificationGas, VerificationGasLimit, and CallGasLimit
+// EstimateRip7560TransactionGas returns estimates for PreVerificationGas, VerificationGasLimit, and CallGasLimit
 // given a UserOperation, EntryPoint address, and state OverrideSet. The signature field and current gas
 // values will not be validated although there should be dummy values in place for the most reliable results
 // (e.g. a signature with the correct length).
-func (i *Client) EstimateUserOperationGas(
-	op map[string]any,
+func (i *Client) EstimateRip7560TransactionGas(
+	txArgs *transaction.TransactionArgs,
 	os map[string]any,
 ) (*gas.GasEstimates, error) {
 	// Init logger
-	l := i.logger.WithName("eth_estimateUserOperationGas")
+	l := i.logger.WithName("eth_estimateRip7560TransactionGas")
 
-	userOp, err := userop.New(op)
-	if err != nil {
-		l.Error(err, "eth_estimateUserOperationGas error")
-		return nil, err
-	}
-
-	//hash := userOp.GetUserOpHash(epAddr, i.chainID)
-	//l = l.WithValues("userop_hash", hash)
+	hash := txArgs.ToTransaction().Hash()
+	l = l.WithValues("rip7560Tx_hash", hash)
 
 	// Parse state override set.
 	sos, err := state.ParseOverrideData(os)
 	if err != nil {
-		l.Error(err, "eth_estimateUserOperationGas error")
+		l.Error(err, "eth_estimateRip7560TransactionGas error")
 		return nil, err
 	}
 
 	// Override op with suggested gas prices if maxFeePerGas is 0. This allows for more reliable gas
 	// estimations upstream. The default balance override also ensures simulations won't revert on
 	// insufficient funds.
-	if userOp.MaxFeePerGas.Cmp(common.Big0) != 1 {
+	if txArgs.MaxFeePerGas.ToInt().Cmp(common.Big0) != 1 {
 		gp, err := i.getGasPrices()
 		if err != nil {
-			l.Error(err, "eth_estimateUserOperationGas error")
+			l.Error(err, "eth_estimateRip7560TransactionGas error")
 			return nil, err
 		}
-		userOp.MaxFeePerGas = gp.MaxFeePerGas
-		userOp.MaxPriorityFeePerGas = gp.MaxPriorityFeePerGas
+		gpMaxFeePerGas := hexutil.Big(*gp.MaxFeePerGas)
+		gpMaxPriorityFeePerGas := hexutil.Big(*gp.MaxPriorityFeePerGas)
+		txArgs.MaxFeePerGas = &gpMaxFeePerGas
+		txArgs.MaxPriorityFeePerGas = &gpMaxPriorityFeePerGas
 	}
 
 	// Estimate gas limits
-	vg, cg, err := i.getGasEstimate(userOp, sos)
+	vg, cg, err := i.getGasEstimate(txArgs, sos)
 	if err != nil {
-		l.Error(err, "eth_estimateUserOperationGas error")
+		l.Error(err, "eth_estimateRip7560TransactionGas error")
 		return nil, err
 	}
 
-	// Calculate PreVerificationGas
-	//pvg, err := i.ov.CalcPreVerificationGasWithBuffer(userOp)
-	//if err != nil {
-	//	l.Error(err, "eth_estimateUserOperationGas error")
-	//	return nil, err
-	//}
-
-	l.Info("eth_estimateUserOperationGas ok")
+	l.Info("eth_estimateRip7560TransactionGas ok")
 	return &gas.GasEstimates{
-		PreVerificationGas:   big.NewInt(0), // do not use this (in RIP7560 this is builder fee)
 		VerificationGasLimit: big.NewInt(int64(vg)),
 		CallGasLimit:         big.NewInt(int64(cg)),
-
-		// TODO: Deprecate in v0.7
-		VerificationGas: big.NewInt(int64(vg)),
 	}, nil
 }
 
-// GetUserOperationReceipt returns RIP7560 transaction receipt based on a userOp
-// *Client.SendUserOperation.
-func (i *Client) GetUserOperationReceipt(
-	op userOperation,
+// GetRip7560TransactionReceipt returns RIP-7560 transaction receipt based on a tx hash
+func (i *Client) GetRip7560TransactionReceipt(
+	txArgs *transaction.TransactionArgs,
 ) (*types.Receipt, error) {
 	// Init logger
-	l := i.logger.WithName("eth_getUserOperationRip7560Receipt").WithValues("rip7560userop")
+	l := i.logger.WithName("eth_getRip7560TransactionReceipt").WithValues("rip7560transaction")
 
-	txHash, err := getTransactionHashByUserOp(op)
+	receipt, err := i.getRip7560TxReceipt(txArgs.ToTransaction().Hash().String(), i.opLookupLimit)
 	if err != nil {
-		l.Error(err, "getTransactionHashByUserOp error")
-		return nil, err
+		l.Error(err, "getRip7560TransactionReceipt error")
 	}
 
-	receipt, err := i.getUserOpReceipt(txHash.String(), i.opLookupLimit)
-	if err != nil {
-		l.Error(err, "getRip7560UserOpReceipt error")
-	}
-
-	l.Info("eth_getUserOperationReceipt ok")
+	l.Info("eth_getRip7560TransactionReceipt ok")
 	return receipt, nil
-}
-
-// SupportedEntryPoints implements the method call for eth_supportedEntryPoints. It returns the array of
-// EntryPoint addresses that is supported by the client. The first address in the array is the preferred
-// EntryPoint.
-// TODO : inject static value?
-func (i *Client) SupportedEntryPoints() ([]string, error) {
-	slc := []string{}
-	//for _, ep := range i.supportedEntryPoints {
-	//	slc = append(slc, ep.String())
-	//}
-
-	return slc, nil
 }
 
 // ChainID implements the method call for eth_chainId. It returns the current chainID used by the client.
 // This method is used to validate that the client's chainID is in sync with the caller.
 func (i *Client) ChainID() (string, error) {
 	return hexutil.EncodeBig(i.chainID), nil
-}
-
-func getTransactionHashByUserOp(op userOperation) (common.Hash, error) {
-	userOp, err := userop.New(op)
-	if err != nil {
-		//l.Error(err, "eth_sendUserOperation error")
-		return common.Hash{}, err
-	}
-
-	txArgs := CreateUserOperationArgs(userOp)
-	gas, _ := strconv.ParseUint(txArgs.Gas[2:], 16, 64)
-	sender := common.HexToAddress(txArgs.Sender)
-	builderFee, _ := new(big.Int).SetString(txArgs.BuilderFee, 0)
-	validationGas, _ := strconv.ParseUint(txArgs.ValidationGas[2:], 16, 64)
-	paymasterGas, _ := strconv.ParseUint(txArgs.PaymasterGas[2:], 16, 64)
-	postopGas, _ := strconv.ParseUint(txArgs.PostOpGas[2:], 16, 64)
-	bigNonce, _ := new(big.Int).SetString(txArgs.BigNonce, 0)
-	aatx := types.Rip7560AccountAbstractionTx{
-		To:         &common.Address{},
-		ChainID:    nil,
-		Gas:        gas,
-		GasTipCap:  userOp.MaxPriorityFeePerGas,
-		GasFeeCap:  userOp.MaxFeePerGas,
-		Value:      nil,
-		Data:       userOp.CallData,
-		AccessList: types.AccessList{},
-		// RIP-7560 parameters
-		Sender:        &sender,
-		Signature:     userOp.Signature,
-		PaymasterData: userOp.PaymasterAndData,
-		DeployerData:  userOp.InitCode,
-		BuilderFee:    builderFee,
-		ValidationGas: validationGas,
-		PaymasterGas:  paymasterGas,
-		PostOpGas:     postopGas,
-		// RIP-7712 parameter
-		BigNonce: bigNonce,
-	}
-	tx := types.NewTx(&aatx)
-	return tx.Hash(), nil
 }
