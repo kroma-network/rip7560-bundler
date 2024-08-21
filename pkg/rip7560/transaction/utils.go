@@ -27,7 +27,7 @@ func Wait(txn *types.Transaction, eth *ethclient.Client, timeout time.Duration) 
 		return nil, err
 	} else if receipt.Status == types.ReceiptStatusFailed {
 		// Return an error here so that the current batch stays in the mempool. In the next bundler iteration,
-		// the offending userOps will be dropped during gas estimation.
+		// the offending transactions will be dropped during gas estimation.
 		return nil, errors.New("transaction: failed status")
 	}
 	return txn, nil

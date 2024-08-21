@@ -47,8 +47,8 @@ func TestPendingTxsWithNoGasFeeReplacement(t *testing.T) {
 		penTxs,
 	)
 
-	if !errors.Is(err, ErrReplacementOpUnderpriced) {
-		t.Fatalf("got %v, want ErrReplacementOpUnderpriced", err)
+	if !errors.Is(err, ErrReplacementTxUnderpriced) {
+		t.Fatalf("got %v, want ErrReplacementTxUnderpriced", err)
 	}
 }
 
@@ -63,8 +63,8 @@ func TestPendingTxsWithOnlyMaxFeeReplacement(t *testing.T) {
 		penTxs,
 	)
 
-	if !errors.Is(err, ErrReplacementOpUnderpriced) {
-		t.Fatalf("got %v, want ErrReplacementOpUnderpriced", err)
+	if !errors.Is(err, ErrReplacementTxUnderpriced) {
+		t.Fatalf("got %v, want ErrReplacementTxUnderpriced", err)
 	}
 }
 
@@ -79,12 +79,12 @@ func TestPendingTxsWithOnlyMaxPriorityFeeReplacement(t *testing.T) {
 		penTxs,
 	)
 
-	if !errors.Is(err, ErrReplacementOpUnderpriced) {
-		t.Fatalf("got %v, want ErrReplacementOpUnderpriced", err)
+	if !errors.Is(err, ErrReplacementTxUnderpriced) {
+		t.Fatalf("got %v, want ErrReplacementTxUnderpriced", err)
 	}
 }
 
-func TestPendingOpsWithOkGasFeeReplacement(t *testing.T) {
+func TestPendingTxsWithOkGasFeeReplacement(t *testing.T) {
 	penTx := testutils.MockValidInitRip7560Tx()
 	penTxs := []*transaction.TransactionArgs{penTx}
 	tx := testutils.MockValidInitRip7560Tx()

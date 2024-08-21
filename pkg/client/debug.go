@@ -69,7 +69,7 @@ func (d *Debug) DumpMempool() ([]*transaction.TransactionArgs, error) {
 	//return res, nil
 }
 
-// SendBundleNow forces the bundler to build and execute a bundle from the mempool as handleOps() transaction.
+// SendBundleNow forces the bundler to build and execute a bundle from the mempool as handleTxsS() transaction.
 // TODO : need update
 //func (d *Debug) SendBundleNow() (string, error) {
 //	ctx, err := d.bundler.Process(d.entrypoint)

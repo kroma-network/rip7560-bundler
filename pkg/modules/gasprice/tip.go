@@ -10,8 +10,8 @@ import (
 // timely execution of a transaction.
 type GetGasTipFunc = func() (*big.Int, error)
 
-// NoopGetGasTipFunc returns nil gas tip and nil error.
-func NoopGetGasTipFunc() GetGasTipFunc {
+// NotxGetGasTipFunc returns nil gas tip and nil error.
+func NotxGetGasTipFunc() GetGasTipFunc {
 	return func() (*big.Int, error) {
 		return nil, nil
 	}

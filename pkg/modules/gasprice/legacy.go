@@ -11,8 +11,8 @@ import (
 // allow for timely execution of a transaction.
 type GetLegacyGasPriceFunc = func() (*big.Int, error)
 
-// NoopGetLegacyGasPriceFunc returns nil gas price and nil error.
-func NoopGetLegacyGasPriceFunc() GetLegacyGasPriceFunc {
+// NotxGetLegacyGasPriceFunc returns nil gas price and nil error.
+func NotxGetLegacyGasPriceFunc() GetLegacyGasPriceFunc {
 	return func() (*big.Int, error) {
 		return nil, nil
 	}

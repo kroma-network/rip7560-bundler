@@ -8,8 +8,8 @@ import (
 
 var (
 	minPriceBump                = int64(10)
-	ErrReplacementOpUnderpriced = fmt.Errorf(
-		"pending ops: replacement op must increase maxFeePerGas and MaxPriorityFeePerGas by >= %d%%",
+	ErrReplacementTxUnderpriced = fmt.Errorf(
+		"pending txs: replacement tx must increase maxFeePerGas and MaxPriorityFeePerGas by >= %d%%",
 		minPriceBump,
 	)
 )
@@ -47,7 +47,7 @@ func ValidatePendingTxs(
 			newMf, newMpf := calcNewThresholds(oldTx.MaxFeePerGas.ToInt(), oldTx.MaxPriorityFeePerGas.ToInt())
 
 			if tx.MaxFeePerGas.ToInt().Cmp(newMf) < 0 || tx.MaxPriorityFeePerGas.ToInt().Cmp(newMpf) < 0 {
-				return ErrReplacementOpUnderpriced
+				return ErrReplacementTxUnderpriced
 			}
 		}
 	}

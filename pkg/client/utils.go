@@ -19,7 +19,7 @@ import (
 // EntryPoint address, and block range.
 type GetRip7560TxReceiptFunc = func(txHash string, blkRange uint64) (*types.Receipt, error)
 
-func getRip7560TxReceiptNoop() GetRip7560TxReceiptFunc {
+func getRip7560TxReceiptNotx() GetRip7560TxReceiptFunc {
 	return func(txHash string, blkRange uint64) (*types.Receipt, error) {
 		return nil, nil
 	}
@@ -36,7 +36,7 @@ func GetRip7560TransactionReceiptWithEthClient(eth *ethclient.Client) GetRip7560
 // GetGasPricesFunc is a general interface for fetching values for maxFeePerGas and maxPriorityFeePerGas.
 type GetGasPricesFunc = func() (*fees.GasPrices, error)
 
-func getGasPricesNoop() GetGasPricesFunc {
+func getGasPricesNotx() GetGasPricesFunc {
 	return func() (*fees.GasPrices, error) {
 		return &fees.GasPrices{
 			MaxFeePerGas:         big.NewInt(0),

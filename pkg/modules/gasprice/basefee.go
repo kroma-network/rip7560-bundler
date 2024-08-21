@@ -11,8 +11,8 @@ import (
 // timely execution of a transaction.
 type GetBaseFeeFunc = func() (*big.Int, error)
 
-// NoopGetBaseFeeFunc returns nil basefee and nil error.
-func NoopGetBaseFeeFunc() GetBaseFeeFunc {
+// NotxGetBaseFeeFunc returns nil basefee and nil error.
+func NotxGetBaseFeeFunc() GetBaseFeeFunc {
 	return func() (*big.Int, error) {
 		return nil, nil
 	}

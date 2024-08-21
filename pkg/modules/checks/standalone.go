@@ -51,7 +51,7 @@ func New(
 	}
 }
 
-// ValidateTxValues returns a UserOpHandler that runs through some first line sanity checks for new UserOps
+// ValidateTxValues returns a Rip7560TxHandler that runs through some first line sanity checks for new Rip7560Txs
 // received by the Client. This should be one of the first modules executed by the Client.
 func (s *Standalone) ValidateTxValues() modules.Rip7560TxHandlerFunc {
 	return func(ctx *modules.TxHandlerCtx) error {

@@ -1,4 +1,4 @@
-// Package client provides the mediator for processing incoming UserOperations to the bundler.
+// Package client provides the mediator for processing incoming AA Transactions to the bundler.
 package client
 
 import (
@@ -10,14 +10,14 @@ import (
 	"github.com/stackup-wallet/stackup-bundler/pkg/gas"
 	"github.com/stackup-wallet/stackup-bundler/pkg/mempool"
 	"github.com/stackup-wallet/stackup-bundler/pkg/modules"
-	"github.com/stackup-wallet/stackup-bundler/pkg/modules/noop"
+	"github.com/stackup-wallet/stackup-bundler/pkg/modules/notx"
 	"github.com/stackup-wallet/stackup-bundler/pkg/rip7560/transaction"
 	"github.com/stackup-wallet/stackup-bundler/pkg/state"
 	"math/big"
 )
 
-// Client controls the end to end process of adding incoming UserOperations to the mempool. It also
-// implements the required RPC methods as specified in EIP-4337.
+// Client controls the end to end process of adding incoming AA transactions to the mempool. It also
+// implements the required RPC methods as specified in RIP-7560.
 type Client struct {
 	mempool             *mempool.Mempool
 	chainID             *big.Int
@@ -26,25 +26,25 @@ type Client struct {
 	getRip7560TxReceipt GetRip7560TxReceiptFunc
 	getGasPrices        GetGasPricesFunc
 	getGasEstimate      GetGasEstimateFunc
-	opLookupLimit       uint64
+	txLookupLimit       uint64
 }
 
-// New initializes a new ERC-4337 client which can be extended with modules for validating UserOperations
+// New initializes a new RIP-7560 client which can be extended with modules for validating Transactions
 // that are allowed to be added to the mempool.
 func New(
 	mempool *mempool.Mempool,
 	chainID *big.Int,
-	opLookupLimit uint64,
+	txLookupLimit uint64,
 ) *Client {
 	return &Client{
 		mempool:             mempool,
 		chainID:             chainID,
-		rip7560TxHandler:    noop.Rip7560TxHandler,
+		rip7560TxHandler:    notx.Rip7560TxHandler,
 		logger:              logger.NewZeroLogr().WithName("client"),
-		getRip7560TxReceipt: getRip7560TxReceiptNoop(),
-		getGasPrices:        getGasPricesNoop(),
+		getRip7560TxReceipt: getRip7560TxReceiptNotx(),
+		getGasPrices:        getGasPricesNotx(),
 		getGasEstimate:      getGasEstimateNoop(),
-		opLookupLimit:       opLookupLimit,
+		txLookupLimit:       txLookupLimit,
 	}
 }
 
@@ -58,7 +58,7 @@ func (i *Client) UseModules(handlers ...modules.Rip7560TxHandlerFunc) {
 	i.rip7560TxHandler = modules.ComposeUserOpHandlerFunc(handlers...)
 }
 
-// SetGetUserOpRip7560ReceiptFunc defines a general function for fetching a UserOpReceipt given a userOpHash and
+// SetGetRip7560TransactionReceiptFunc defines a general function for fetching a TransactionReceipt given a userOpHash and
 // EntryPoint address. This function is called in *Client.GetRip7560TransactionReceipt.
 func (i *Client) SetGetRip7560TransactionReceiptFunc(fn GetRip7560TxReceiptFunc) {
 	i.getRip7560TxReceipt = fn
@@ -170,7 +170,7 @@ func (i *Client) GetRip7560TransactionReceipt(
 	// Init logger
 	l := i.logger.WithName("eth_getRip7560TransactionReceipt").WithValues("rip7560transaction")
 
-	receipt, err := i.getRip7560TxReceipt(txArgs.ToTransaction().Hash().String(), i.opLookupLimit)
+	receipt, err := i.getRip7560TxReceipt(txArgs.ToTransaction().Hash().String(), i.txLookupLimit)
 	if err != nil {
 		l.Error(err, "getRip7560TransactionReceipt error")
 	}

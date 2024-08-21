@@ -43,11 +43,11 @@ func TestSortByGasPriceBaseDynamic(t *testing.T) {
 	} else if len(ctx.Batch) != 3 {
 		t.Fatalf("got length %d, want 3", len(ctx.Batch))
 	} else if !testutils.IsTxsEqual(ctx.Batch[0], tx2) {
-		t.Fatal("incorrect order: first op out of place")
+		t.Fatal("incorrect order: first tx out of place")
 	} else if !testutils.IsTxsEqual(ctx.Batch[1], tx1) {
-		t.Fatal("incorrect order: second op out of place")
+		t.Fatal("incorrect order: second tx out of place")
 	} else if !testutils.IsTxsEqual(ctx.Batch[2], tx3) {
-		t.Fatal("incorrect order: third op out of place")
+		t.Fatal("incorrect order: third tx out of place")
 	}
 }
 
@@ -80,10 +80,10 @@ func TestSortByGasPriceLegacy(t *testing.T) {
 	} else if len(ctx.Batch) != 3 {
 		t.Fatalf("got length %d, want 3", len(ctx.Batch))
 	} else if !testutils.IsTxsEqual(ctx.Batch[0], tx3) {
-		t.Fatal("incorrect order: first op out of place")
+		t.Fatal("incorrect order: first tx out of place")
 	} else if !testutils.IsTxsEqual(ctx.Batch[1], tx2) {
-		t.Fatal("incorrect order: second op out of place")
+		t.Fatal("incorrect order: second tx out of place")
 	} else if !testutils.IsTxsEqual(ctx.Batch[2], tx1) {
-		t.Fatal("incorrect order: third op out of place")
+		t.Fatal("incorrect order: third tx out of place")
 	}
 }
