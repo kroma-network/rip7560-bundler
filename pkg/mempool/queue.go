@@ -24,6 +24,7 @@ func (q *rip7560TxQueues) AddTx(tx *transaction.TransactionArgs) {
 	key := string(getUniqueKey(tx.GetSender(), tx.BigNonce))
 
 	q.all.AddOrUpdate(key, sortedset.SCORE(q.all.GetCount()), tx)
+	// TODO : Need to consider both bignonce and nonce
 	q.getEntitiesSortedSet(*rip7560Tx.Sender).AddOrUpdate(key, sortedset.SCORE(int64(rip7560Tx.Nonce)), tx)
 	if deployer := tx.GetDeployer(); deployer != common.HexToAddress("0x") {
 		fss := q.getEntitiesSortedSet(deployer)

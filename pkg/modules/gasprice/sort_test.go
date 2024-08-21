@@ -11,7 +11,7 @@ import (
 	"github.com/stackup-wallet/stackup-bundler/pkg/modules/gasprice"
 )
 
-// TestSortByGasPriceBaseDynamic verifies that SortByGasPrice sorts the UserOperations in a batch by highest
+// TestSortByGasPriceBaseDynamic verifies that SortByGasPrice sorts the Rip-7560 transactions in a batch by highest
 // effective Gas Price first.
 func TestSortByGasPriceBaseDynamic(t *testing.T) {
 	bf := big.NewInt(3)
@@ -51,7 +51,7 @@ func TestSortByGasPriceBaseDynamic(t *testing.T) {
 	}
 }
 
-// TestSortByGasPriceLegacy verifies that SortByGasPrice sorts the UserOperations in a batch by highest
+// TestSortByGasPriceLegacy verifies that SortByGasPrice sorts the Rip-7560 transactions in a batch by highest
 // MaxFeePerGas if the context BaseFee is nil.
 func TestSortByGasPriceLegacy(t *testing.T) {
 	tx1 := testutils.MockValidInitRip7560Tx()

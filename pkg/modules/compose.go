@@ -14,8 +14,8 @@ func ComposeBatchHandlerFunc(fns ...BatchHandlerFunc) BatchHandlerFunc {
 	}
 }
 
-// ComposeUserOpHandlerFunc combines many UserOpHandlers into one.
-func ComposeUserOpHandlerFunc(fns ...Rip7560TxHandlerFunc) Rip7560TxHandlerFunc {
+// ComposeTransactionHandlerFunc combines many Rip7560TxHandlers into one.
+func ComposeTransactionHandlerFunc(fns ...Rip7560TxHandlerFunc) Rip7560TxHandlerFunc {
 	return func(ctx *TxHandlerCtx) error {
 		for _, fn := range fns {
 			err := fn(ctx)

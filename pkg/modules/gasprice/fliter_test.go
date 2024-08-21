@@ -11,7 +11,7 @@ import (
 	"github.com/stackup-wallet/stackup-bundler/pkg/modules/gasprice"
 )
 
-// TestFilterUnderpricedDynamic verifies that FilterUnderpriced will remove all UserOperations from a batch
+// TestFilterUnderpricedDynamic verifies that FilterUnderpriced will remove all Rip-7560 transactions from a batch
 // where the effective gas price is less than the expected bundler transaction's gas price.
 func TestFilterUnderpricedDynamic(t *testing.T) {
 	bf := big.NewInt(4)
@@ -49,7 +49,7 @@ func TestFilterUnderpricedDynamic(t *testing.T) {
 	}
 }
 
-// TestFilterUnderpricedGasPrice verifies that FilterUnderpriced will remove all UserOperations from a batch
+// TestFilterUnderpricedGasPrice verifies that FilterUnderpriced will remove all Rip-7560 transactions from a batch
 // where the MaxFeePerGas is less than the context GasPrice.
 func TestFilterUnderpricedGasPrice(t *testing.T) {
 	tx1 := testutils.MockValidInitRip7560Tx()

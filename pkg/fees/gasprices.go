@@ -8,7 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 )
 
-// GasPrices contains recommended gas fees for a UserOperation to be included in a timely manner.
+// GasPrices contains recommended gas fees for a Rip-7560 transaction to be included in a timely manner.
 type GasPrices struct {
 	MaxFeePerGas         *big.Int
 	MaxPriorityFeePerGas *big.Int

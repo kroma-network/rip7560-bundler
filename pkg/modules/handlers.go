@@ -2,7 +2,7 @@
 // middleware.
 package modules
 
-// BatchHandlerFunc is an interface to support modular processing of UserOperation batches by the Bundler.
+// BatchHandlerFunc is an interface to support modular processing of Rip-7560 transaction batches by the Bundler.
 type BatchHandlerFunc func(ctx *BatchHandlerCtx) error
 
 // Rip7560TxHandlerFunc is an interface to support modular processing of single Rip7560Tx by the Client.

@@ -10,7 +10,7 @@ import (
 	"github.com/stackup-wallet/stackup-bundler/pkg/modules"
 )
 
-// TestDropExpired calls (*ExpireHandler).DropExpired and verifies that it marks old UserOperations for
+// TestDropExpired calls (*ExpireHandler).DropExpired and verifies that it marks old Rip-7560 transactions for
 // pending removal.
 func TestDropExpired(t *testing.T) {
 	exp := New(time.Second * 30)

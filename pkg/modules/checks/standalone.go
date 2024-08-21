@@ -131,7 +131,7 @@ func (s *Standalone) CodeHashes() modules.BatchHandlerFunc {
 				return err
 			}
 			if changed {
-				ctx.MarkOpIndexForRemoval(i, "code hash changed")
+				ctx.MarkTxIndexForRemoval(i, "code hash changed")
 			}
 		}
 		return nil

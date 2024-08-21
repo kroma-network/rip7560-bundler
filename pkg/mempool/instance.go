@@ -1,4 +1,4 @@
-// Package mempool provides a local representation of all the UserOperations that are known to the bundler
+// Package mempool provides a local representation of all the Rip-7560 transactions that are known to the bundler
 // which have passed all Client checks and pending action by the Bundler.
 package mempool
 
@@ -48,6 +48,7 @@ func (m *Mempool) AddTx(tx *transaction.TransactionArgs) error {
 		return fmt.Errorf("failed to RLP encode transaction: %v", err)
 	}
 	err = m.db.Update(func(txn *badger.Txn) error {
+		// TODO : Set/Get with bignonce, nonce as a key that takes both
 		return txn.Set(getUniqueKey(tx.GetSender(), tx.BigNonce), buf.Bytes())
 	})
 	if err != nil {

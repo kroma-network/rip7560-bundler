@@ -12,7 +12,7 @@ type ExpireHandler struct {
 	ttl    time.Duration
 }
 
-// New returns an ExpireHandler which contains a BatchHandlerFunc to track and drop UserOperations that have
+// New returns an ExpireHandler which contains a BatchHandlerFunc to track and drop Rip-7560 transactions that have
 // been in the mempool for longer than the TTL duration.
 func New(ttl time.Duration) *ExpireHandler {
 	return &ExpireHandler{
@@ -21,7 +21,7 @@ func New(ttl time.Duration) *ExpireHandler {
 	}
 }
 
-// DropExpired returns a BatchHandlerFunc that will drop UserOperations from the mempool if it has been around
+// DropExpired returns a BatchHandlerFunc that will drop Rip-7560 transactions from the mempool if it has been around
 // for longer than the TTL duration.
 func (e *ExpireHandler) DropExpired() modules.BatchHandlerFunc {
 	return func(ctx *modules.BatchHandlerCtx) error {
@@ -31,7 +31,7 @@ func (e *ExpireHandler) DropExpired() modules.BatchHandlerFunc {
 			if seenAt, ok := e.seenAt[hash]; !ok {
 				e.seenAt[hash] = time.Now()
 			} else if seenAt.Add(e.ttl).Before(time.Now()) {
-				ctx.MarkOpIndexForRemoval(i, "transaction expired")
+				ctx.MarkTxIndexForRemoval(i, "transaction expired")
 			}
 		}
 		return nil

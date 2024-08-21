@@ -13,25 +13,25 @@ var (
 	codeHashesPrefix = dbutils.JoinValues(keyPrefix, "codeHashes")
 )
 
-func getCodeHashesKey(userOpHash common.Hash) []byte {
-	return []byte(dbutils.JoinValues(codeHashesPrefix, userOpHash.String()))
+func getCodeHashesKey(txHash common.Hash) []byte {
+	return []byte(dbutils.JoinValues(codeHashesPrefix, txHash.String()))
 }
 
-func saveCodeHashes(db *badger.DB, userOpHash common.Hash, codeHashes []codeHash) error {
+func saveCodeHashes(db *badger.DB, txHash common.Hash, codeHashes []codeHash) error {
 	return db.Update(func(txn *badger.Txn) error {
 		data, err := json.Marshal(codeHashes)
 		if err != nil {
 			return err
 		}
 
-		return txn.Set(getCodeHashesKey(userOpHash), data)
+		return txn.Set(getCodeHashesKey(txHash), data)
 	})
 }
 
-func getSavedCodeHashes(db *badger.DB, userOpHash common.Hash) ([]codeHash, error) {
+func getSavedCodeHashes(db *badger.DB, txHash common.Hash) ([]codeHash, error) {
 	var ch []codeHash
 	err := db.View(func(txn *badger.Txn) error {
-		item, err := txn.Get(getCodeHashesKey(userOpHash))
+		item, err := txn.Get(getCodeHashesKey(txHash))
 		if err != nil {
 			return err
 		}
@@ -44,10 +44,10 @@ func getSavedCodeHashes(db *badger.DB, userOpHash common.Hash) ([]codeHash, erro
 	return ch, err
 }
 
-func removeSavedCodeHashes(db *badger.DB, userOpHashes ...common.Hash) error {
+func removeSavedCodeHashes(db *badger.DB, txHashes ...common.Hash) error {
 	return db.Update(func(txn *badger.Txn) error {
-		for _, userOpHash := range userOpHashes {
-			if err := txn.Delete(getCodeHashesKey(userOpHash)); err != nil {
+		for _, txHash := range txHashes {
+			if err := txn.Delete(getCodeHashesKey(txHash)); err != nil {
 				return err
 			}
 		}
