@@ -1,4 +1,4 @@
-// Package bundler provides the mediator for processing outgoing UserOperation batches to the EntryPoint.
+// Package bundler provides the mediator for processing outgoing Rip-7560 Transaction batches to the EntryPoint.
 package bundler
 
 import (

@@ -49,7 +49,7 @@ func NewBatchHandlerContext(
 	}
 }
 
-// MarkTxIndexForRemoval will remove the tx by index from the batch and add it to the pending removal array.
+// MarkTxIndexForRemoval will remove the op by index from the batch and add it to the pending removal array.
 // This should be used for txs that are not to be included on-chain and dropped from the mempool.
 func (c *BatchHandlerCtx) MarkTxIndexForRemoval(index int, reason string) {
 	var batch []*transaction.TransactionArgs

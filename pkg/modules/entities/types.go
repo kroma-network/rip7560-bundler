@@ -10,7 +10,7 @@ type ReputationOverride struct {
 	TxsIncluded int            `json:"txsIncluded"`
 }
 
-// ReputationConstants are a collection of values for determining the appropriate status of a UserOperation
+// ReputationConstants are a collection of values for determining the appropriate status of a Rip-7560 transaction
 // coming into the mempool.
 type ReputationConstants struct {
 	MinUnstakeDelay                int

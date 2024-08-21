@@ -14,7 +14,7 @@ import (
 )
 
 // Reputation provides Client and Bundler modules to track the reputation of every entity seen in a
-// UserOperation.
+// Rip-7560 transactions.
 type Reputation struct {
 	db       *badger.DB
 	eth      *ethclient.Client
@@ -26,7 +26,7 @@ func New(db *badger.DB, eth *ethclient.Client, repConst *ReputationConstants) *R
 	return &Reputation{db, eth, repConst}
 }
 
-// CheckStatus returns a Rip7560TxHandler that is used by the Client to determine if the userOp is allowed based
+// CheckStatus returns a Rip7560TxHandler that is used by the Client to determine if the Rip-7560 transaction is allowed based
 // on the entities status.
 //  1. ok: entity is allowed
 //  2. throttled: No new txs from the entity is allowed if one already exists. And it can only stays in

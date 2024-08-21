@@ -15,7 +15,7 @@ import (
 	"github.com/stackup-wallet/stackup-bundler/pkg/state"
 )
 
-// GetRip7560TxReceiptFunc is a general interface for fetching a UserOperationReceipt given a userOpHash,
+// GetRip7560TxReceiptFunc is a general interface for fetching a Rip-7560 transaction Receipt given a txHash,
 // EntryPoint address, and block range.
 type GetRip7560TxReceiptFunc = func(txHash string, blkRange uint64) (*types.Receipt, error)
 
@@ -25,8 +25,8 @@ func getRip7560TxReceiptNotx() GetRip7560TxReceiptFunc {
 	}
 }
 
-// GetRip7560TransactionReceiptWithEthClient returns an implementation of GetRip7560UserOpReceiptFunc that relies on an eth
-// client to fetch a UserOperationReceipt.
+// GetRip7560TransactionReceiptWithEthClient returns an implementation of GetRip7560UserTxReceiptFunc that relies on an eth
+// client to fetch a Rip-7560 transactionReceipt.
 func GetRip7560TransactionReceiptWithEthClient(eth *ethclient.Client) GetRip7560TxReceiptFunc {
 	return func(txHash string, blkRange uint64) (*types.Receipt, error) {
 		return filter.GetRip7560TransactionReceipt(eth, txHash, blkRange)
@@ -54,7 +54,7 @@ func GetGasPricesWithEthClient(eth *ethclient.Client) GetGasPricesFunc {
 }
 
 // GetGasEstimateFunc is a general interface for fetching an estimate for verificationGasLimit and
-// callGasLimit given a userOp and EntryPoint address.
+// callGasLimit given a Rip-7560 transaction.
 type GetGasEstimateFunc = func(
 	aaTxArgs *transaction.TransactionArgs,
 	sos state.OverrideSet,

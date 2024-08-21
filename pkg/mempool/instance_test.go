@@ -9,7 +9,7 @@ import (
 	"github.com/stackup-wallet/stackup-bundler/internal/testutils"
 )
 
-// TestAddTxToMempool verifies that a UserOperation can be added to the mempool and later retrieved without
+// TestAddTxToMempool verifies that a Rip-7560 Transactions can be added to the mempool and later retrieved without
 // any changes.
 func TestAddTxToMempool(t *testing.T) {
 	db := testutils.DBMock()
@@ -35,7 +35,7 @@ func TestAddTxToMempool(t *testing.T) {
 }
 
 // TestReplaceTxInMempool verifies that a RIP-7560 transaction with same Sender and Nonce can replace another
-// UserOperation already in the mempool.
+// Rip-7560 transactions already in the mempool.
 func TestReplaceTxInMempool(t *testing.T) {
 	db := testutils.DBMock()
 	defer db.Close()
@@ -64,7 +64,7 @@ func TestReplaceTxInMempool(t *testing.T) {
 	}
 }
 
-// TestRemoveTxsFromMempool verifies that a UserOperation can be added to the mempool and later removed.
+// TestRemoveTxsFromMempool verifies that a Rip-7560 transactions can be added to the mempool and later removed.
 func TestRemoveTxsFromMempool(t *testing.T) {
 	db := testutils.DBMock()
 	defer db.Close()
@@ -88,7 +88,7 @@ func TestRemoveTxsFromMempool(t *testing.T) {
 	}
 }
 
-// TestDumpFromMempool verifies that bundles are being built with UserOperations in the mempool. Ordering is
+// TestDumpFromMempool verifies that bundles are being built with Rip-7560 transactionss in the mempool. Ordering is
 // FIFO and more specific sorting and filtering is left up to downstream modules to implement.
 func TestDumpFromMempool(t *testing.T) {
 	db := testutils.DBMock()

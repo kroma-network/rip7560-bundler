@@ -53,12 +53,12 @@ func (i *Client) UseLogger(logger logr.Logger) {
 	i.logger = logger.WithName("client")
 }
 
-// UseModules defines the UserOpHandlers to process a userOp after it has gone through the standard checks.
+// UseModules defines the Rip7560TxHandler to process a Rip-7560 transaction after it has gone through the standard checks.
 func (i *Client) UseModules(handlers ...modules.Rip7560TxHandlerFunc) {
-	i.rip7560TxHandler = modules.ComposeUserOpHandlerFunc(handlers...)
+	i.rip7560TxHandler = modules.ComposeTransactionHandlerFunc(handlers...)
 }
 
-// SetGetRip7560TransactionReceiptFunc defines a general function for fetching a TransactionReceipt given a userOpHash and
+// SetGetRip7560TransactionReceiptFunc defines a general function for fetching a TransactionReceipt given a txHash and
 // EntryPoint address. This function is called in *Client.GetRip7560TransactionReceipt.
 func (i *Client) SetGetRip7560TransactionReceiptFunc(fn GetRip7560TxReceiptFunc) {
 	i.getRip7560TxReceipt = fn
@@ -72,8 +72,7 @@ func (i *Client) SetGetGasPricesFunc(fn GetGasPricesFunc) {
 }
 
 // SetGetGasEstimateFunc defines a general function for fetching an estimate for verificationGasLimit and
-// callGasLimit given a userOp and EntryPoint address. This function is called in
-// *Client.EstimateRip7560TransactionGas.
+// callGasLimit given a Rip-7560 transaction. This function is called in Client.EstimateRip7560TransactionGas.
 func (i *Client) SetGetGasEstimateFunc(fn GetGasEstimateFunc) {
 	i.getGasEstimate = fn
 }
@@ -114,7 +113,7 @@ func (i *Client) SendRip7560Transaction(txArgs *transaction.TransactionArgs) (st
 }
 
 // EstimateRip7560TransactionGas returns estimates for PreVerificationGas, VerificationGasLimit, and CallGasLimit
-// given a UserOperation, EntryPoint address, and state OverrideSet. The signature field and current gas
+// given a Rip-7560 transaction, and state OverrideSet. The signature field and current gas
 // values will not be validated although there should be dummy values in place for the most reliable results
 // (e.g. a signature with the correct length).
 func (i *Client) EstimateRip7560TransactionGas(
