@@ -6,7 +6,7 @@ import (
 	"github.com/stackup-wallet/stackup-bundler/pkg/modules"
 )
 
-// SortByNonce returns a BatchHandlerFunc that ensures ops with same sender is ordered by ascending nonce
+// SortByNonce returns a BatchHandlerFunc that ensures txs with same sender is ordered by ascending nonce
 // regardless of gas price.
 func SortByNonce() modules.BatchHandlerFunc {
 	return func(ctx *modules.BatchHandlerCtx) error {

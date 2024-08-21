@@ -14,7 +14,7 @@ import (
 	"github.com/stackup-wallet/stackup-bundler/pkg/mempool"
 	"github.com/stackup-wallet/stackup-bundler/pkg/modules"
 	"github.com/stackup-wallet/stackup-bundler/pkg/modules/gasprice"
-	"github.com/stackup-wallet/stackup-bundler/pkg/modules/noop"
+	"github.com/stackup-wallet/stackup-bundler/pkg/modules/notx"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/metric"
 )
@@ -39,12 +39,12 @@ func New(mempool *mempool.Mempool, chainID *big.Int) *Bundler {
 	return &Bundler{
 		mempool:      mempool,
 		chainID:      chainID,
-		batchHandler: noop.BatchHandler,
+		batchHandler: notx.BatchHandler,
 		logger:       logger.NewZeroLogr().WithName("bundler"),
 		meter:        otel.GetMeterProvider().Meter("bundler"),
-		gbf:          gasprice.NoopGetBaseFeeFunc(),
-		ggt:          gasprice.NoopGetGasTipFunc(),
-		ggp:          gasprice.NoopGetLegacyGasPriceFunc(),
+		gbf:          gasprice.NotxGetBaseFeeFunc(),
+		ggt:          gasprice.NotxGetGasTipFunc(),
+		ggp:          gasprice.NotxGetLegacyGasPriceFunc(),
 	}
 }
 

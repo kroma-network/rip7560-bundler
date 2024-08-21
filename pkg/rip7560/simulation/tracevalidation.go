@@ -111,7 +111,7 @@ func TraceSimulateValidation(in *TraceInput) (*TraceOutput, error) {
 			out, err := methods.DecodevalidatePaymasterTransactionOutputOutput(call.Return)
 			if err != nil {
 				return nil, fmt.Errorf(
-					"unexpected tracing result for op: %s, %s",
+					"unexpected tracing result for tx: %s, %s",
 					in.Tx.ToTransaction().Hash(),
 					err,
 				)

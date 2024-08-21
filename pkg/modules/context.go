@@ -49,9 +49,9 @@ func NewBatchHandlerContext(
 	}
 }
 
-// MarkOpIndexForRemoval will remove the op by index from the batch and add it to the pending removal array.
-// This should be used for ops that are not to be included on-chain and dropped from the mempool.
-func (c *BatchHandlerCtx) MarkOpIndexForRemoval(index int, reason string) {
+// MarkTxIndexForRemoval will remove the tx by index from the batch and add it to the pending removal array.
+// This should be used for txs that are not to be included on-chain and dropped from the mempool.
+func (c *BatchHandlerCtx) MarkTxIndexForRemoval(index int, reason string) {
 	var batch []*transaction.TransactionArgs
 	var tx *transaction.TransactionArgs
 	for i, curr := range c.Batch {
@@ -72,7 +72,7 @@ func (c *BatchHandlerCtx) MarkOpIndexForRemoval(index int, reason string) {
 	})
 }
 
-// TxHandlerCtx is the object passed to UserOpHandler functions during the Client's SendRip7560Transaction
+// TxHandlerCtx is the object passed to Rip7560TxHandler functions during the Client's SendRip7560Transaction
 // process.
 type TxHandlerCtx struct {
 	Tx                  *transaction.TransactionArgs
@@ -82,7 +82,7 @@ type TxHandlerCtx struct {
 	pendingPaymasterTxs []*transaction.TransactionArgs
 }
 
-// NewTxHandlerContext creates a new TxHandlerCtx using a given op.
+// NewTxHandlerContext creates a new TxHandlerCtx using a given tx.
 func NewTxHandlerContext(
 	txArgs *transaction.TransactionArgs,
 	chainID *big.Int,
@@ -144,17 +144,17 @@ func (c *TxHandlerCtx) GetDeployerData() []byte {
 	return c.Tx.ToTransaction().Rip7560TransactionData().DeployerData
 }
 
-// GetPendingSenderTxs returns all pending UserOperations in the mempool by the same sender.
+// GetPendingSenderTxs returns all pending Rip-7560 transactions in the mempool by the same sender.
 func (c *TxHandlerCtx) GetPendingSenderTxs() []*transaction.TransactionArgs {
 	return c.pendingSenderTxs
 }
 
-// GetPendingFactoryTxs returns all pending UserOperations in the mempool by the same factory.
+// GetPendingFactoryTxs returns all pending Rip-7560 transactions in the mempool by the same factory.
 func (c *TxHandlerCtx) GetPendingFactoryTxs() []*transaction.TransactionArgs {
 	return c.pendingDeployerTxs
 }
 
-// GetPendingPaymasterTxs returns all pending UserOperations in the mempool by the same paymaster.
+// GetPendingPaymasterTxs returns all pending Rip-7560 transactions in the mempool by the same paymaster.
 func (c *TxHandlerCtx) GetPendingPaymasterTxs() []*transaction.TransactionArgs {
 	return c.pendingPaymasterTxs
 }

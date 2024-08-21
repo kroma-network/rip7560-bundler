@@ -30,7 +30,7 @@ func TestAddTxToMempool(t *testing.T) {
 	}
 
 	if !testutils.IsTxsEqual(txArgs, memTxs[0]) {
-		t.Fatalf("ops not equal: %s", testutils.GetTxsDiff(txArgs, memTxs[0]))
+		t.Fatalf("txs not equal: %s", testutils.GetTxsDiff(txArgs, memTxs[0]))
 	}
 }
 
@@ -60,7 +60,7 @@ func TestReplaceTxInMempool(t *testing.T) {
 	}
 
 	if !testutils.IsTxsEqual(tx2, memTxs[0]) {
-		t.Fatalf("ops not equal: %s", testutils.GetTxsDiff(tx2, memTxs[0]))
+		t.Fatalf("txs not equal: %s", testutils.GetTxsDiff(tx2, memTxs[0]))
 	}
 }
 
@@ -79,12 +79,12 @@ func TestRemoveTxsFromMempool(t *testing.T) {
 		t.Fatalf("got %v, want nil", err)
 	}
 
-	memOps, err := mem.GetTxs(txArgs.GetSender())
+	memTxs, err := mem.GetTxs(txArgs.GetSender())
 	if err != nil {
 		t.Fatalf("got %v, want nil", err)
 	}
-	if len(memOps) != 0 {
-		t.Fatalf("got length %d, want 0", len(memOps))
+	if len(memTxs) != 0 {
+		t.Fatalf("got length %d, want 0", len(memTxs))
 	}
 }
 
@@ -124,11 +124,11 @@ func TestDumpFromMempool(t *testing.T) {
 	} else if len(memTxs) != 3 {
 		t.Fatalf("got length %d, want 3", len(memTxs))
 	} else if !testutils.IsTxsEqual(memTxs[0], tx1) {
-		t.Fatal("incorrect order: first op out of place")
+		t.Fatal("incorrect order: first tx out of place")
 	} else if !testutils.IsTxsEqual(memTxs[1], tx2) {
-		t.Fatal("incorrect order: second op out of place")
+		t.Fatal("incorrect order: second tx out of place")
 	} else if !testutils.IsTxsEqual(memTxs[2], tx3) {
-		t.Fatal("incorrect order: third op out of place")
+		t.Fatal("incorrect order: third tx out of place")
 	}
 }
 
@@ -154,15 +154,15 @@ func TestNewMempoolLoadsFromDisk(t *testing.T) {
 	}
 
 	mem2, _ := New(db)
-	memOps, err := mem2.GetTxs(tx2.GetSender())
+	memTxs, err := mem2.GetTxs(tx2.GetSender())
 	if err != nil {
 		t.Fatalf("got %v, want nil", err)
 	}
-	if len(memOps) != 1 {
-		t.Fatalf("got length %d, want 1", len(memOps))
+	if len(memTxs) != 1 {
+		t.Fatalf("got length %d, want 1", len(memTxs))
 	}
 
-	if !testutils.IsTxsEqual(tx2, memOps[0]) {
-		t.Fatalf("ops not equal: %s", testutils.GetTxsDiff(tx2, memOps[0]))
+	if !testutils.IsTxsEqual(tx2, memTxs[0]) {
+		t.Fatalf("txsS not equal: %s", testutils.GetTxsDiff(tx2, memTxs[0]))
 	}
 }

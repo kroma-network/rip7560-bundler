@@ -1,5 +1,5 @@
 // Package noop implements basic no-operation modules which are used by default for both Client and Bundler.
-package noop
+package notx
 
 import "github.com/stackup-wallet/stackup-bundler/pkg/modules"
 

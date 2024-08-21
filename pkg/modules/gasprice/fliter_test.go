@@ -43,9 +43,9 @@ func TestFilterUnderpricedDynamic(t *testing.T) {
 	} else if len(ctx.Batch) != 2 {
 		t.Fatalf("got length %d, want 2", len(ctx.Batch))
 	} else if !testutils.IsTxsEqual(ctx.Batch[0], tx2) {
-		t.Fatal("incorrect order: first op out of place")
+		t.Fatal("incorrect order: first tx out of place")
 	} else if !testutils.IsTxsEqual(ctx.Batch[1], tx3) {
-		t.Fatal("incorrect order: second op out of place")
+		t.Fatal("incorrect order: second tx out of place")
 	}
 }
 
@@ -78,8 +78,8 @@ func TestFilterUnderpricedGasPrice(t *testing.T) {
 	} else if len(ctx.Batch) != 2 {
 		t.Fatalf("got length %d, want 2", len(ctx.Batch))
 	} else if !testutils.IsTxsEqual(ctx.Batch[0], tx2) {
-		t.Fatal("incorrect order: first op out of place")
+		t.Fatal("incorrect order: first tx out of place")
 	} else if !testutils.IsTxsEqual(ctx.Batch[1], tx3) {
-		t.Fatal("incorrect order: second op out of place")
+		t.Fatal("incorrect order: second tx out of place")
 	}
 }

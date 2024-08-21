@@ -21,17 +21,17 @@ type Reputation struct {
 	repConst *ReputationConstants
 }
 
-// New returns an instance of a Reputation object to track and appropriately process userOps by entity status.
+// New returns an instance of a Reputation object to track and appropriately process Rip7560Txs by entity status.
 func New(db *badger.DB, eth *ethclient.Client, repConst *ReputationConstants) *Reputation {
 	return &Reputation{db, eth, repConst}
 }
 
-// CheckStatus returns a UserOpHandler that is used by the Client to determine if the userOp is allowed based
+// CheckStatus returns a Rip7560TxHandler that is used by the Client to determine if the userOp is allowed based
 // on the entities status.
 //  1. ok: entity is allowed
-//  2. throttled: No new ops from the entity is allowed if one already exists. And it can only stays in
+//  2. throttled: No new txs from the entity is allowed if one already exists. And it can only stays in
 //     the pool for 10 blocks
-//  3. banned: No ops from the entity is allowed
+//  3. banned: No txs from the entity is allowed
 func (r *Reputation) CheckStatus() modules.Rip7560TxHandlerFunc {
 	return func(ctx *modules.TxHandlerCtx) error {
 		return r.db.Update(func(txn *badger.Txn) error {
@@ -94,16 +94,16 @@ func (r *Reputation) CheckStatus() modules.Rip7560TxHandlerFunc {
 	}
 }
 
-// ValidateOpLimit returns a UserOpHandler that is used by the Client to determine if the userOp is allowed
-// based on the entities stake and the number of pending ops in the mempool.
-func (r *Reputation) ValidateOpLimit() modules.Rip7560TxHandlerFunc {
+// ValidateTxLimit returns a Rip7560TxHandler that is used by the Client to determine if the transaction is allowed
+// based on the number of pending txs in the mempool.
+func (r *Reputation) ValidateTxLimit() modules.Rip7560TxHandlerFunc {
 	return func(ctx *modules.TxHandlerCtx) error {
 		pso := ctx.GetPendingSenderTxs()
 		if len(pso) == r.repConst.SameSenderMempoolCount {
 			return errors.NewRPCError(
 				errors.INVALID_ENTITY_STAKE,
 				fmt.Sprintf(
-					"unstaked entity: %s exceeds pending ops limit of %d",
+					"unstaked entity: %s exceeds pending txs limit of %d",
 					ctx.Tx.Sender.Hex(),
 					r.repConst.SameSenderMempoolCount,
 				),
@@ -118,7 +118,7 @@ func (r *Reputation) ValidateOpLimit() modules.Rip7560TxHandlerFunc {
 				return errors.NewRPCError(
 					errors.INVALID_ENTITY_STAKE,
 					fmt.Sprintf(
-						"unstaked entity: %s exceeds pending ops limit of %d",
+						"unstaked entity: %s exceeds pending txs limit of %d",
 						deployer.Hex(),
 						r.repConst.SameUnstakedEntityMempoolCount,
 					),
@@ -134,7 +134,7 @@ func (r *Reputation) ValidateOpLimit() modules.Rip7560TxHandlerFunc {
 				return errors.NewRPCError(
 					errors.INVALID_ENTITY_STAKE,
 					fmt.Sprintf(
-						"unstaked entity: %s exceeds pending ops limit of %d",
+						"unstaked entity: %s exceeds pending txs limit of %d",
 						paymaster.Hex(),
 						r.repConst.SameUnstakedEntityMempoolCount,
 					),
@@ -147,22 +147,22 @@ func (r *Reputation) ValidateOpLimit() modules.Rip7560TxHandlerFunc {
 	}
 }
 
-// IncOpsSeen returns a UserOpHandler that is used by the Client to increment the opsSeen counter for all
+// IncTxsSeen returns a Rip7560TxHandler that is used by the Client to increment the txsSeen counter for all
 // included entities.
-func (r *Reputation) IncOpsSeen() modules.Rip7560TxHandlerFunc {
+func (r *Reputation) IncTxsSeen() modules.Rip7560TxHandlerFunc {
 	return func(ctx *modules.TxHandlerCtx) error {
 		return r.db.Update(func(txn *badger.Txn) error {
 			var err error
-			err = stdErr.Join(err, incrementOpsSeenByEntity(txn, ctx.GetSender()))
+			err = stdErr.Join(err, incrementTxsSeenByEntity(txn, ctx.GetSender()))
 
 			deployer := ctx.GetDeployer()
 			if deployer != common.HexToAddress("0x") {
-				err = stdErr.Join(err, incrementOpsSeenByEntity(txn, deployer))
+				err = stdErr.Join(err, incrementTxsSeenByEntity(txn, deployer))
 			}
 
 			paymaster := ctx.GetPaymaster()
 			if paymaster != common.HexToAddress("0x") {
-				err = stdErr.Join(err, incrementOpsSeenByEntity(txn, paymaster))
+				err = stdErr.Join(err, incrementTxsSeenByEntity(txn, paymaster))
 			}
 
 			return err
@@ -170,9 +170,9 @@ func (r *Reputation) IncOpsSeen() modules.Rip7560TxHandlerFunc {
 	}
 }
 
-// IncOpsIncluded returns a BatchHandler used by the Bundler to increment opsIncluded counters for all
+// IncTxsIncluded returns a BatchHandler used by the Bundler to increment txsIncluded counters for all
 // relevant entities in the batch. This module should be used last once batches have been sent.
-func (r *Reputation) IncOpsIncluded() modules.BatchHandlerFunc {
+func (r *Reputation) IncTxsIncluded() modules.BatchHandlerFunc {
 	return func(ctx *modules.BatchHandlerCtx) error {
 		return r.db.Update(func(txn *badger.Txn) error {
 			c := make(addressCounter)
@@ -201,7 +201,7 @@ func (r *Reputation) IncOpsIncluded() modules.BatchHandlerFunc {
 				}
 			}
 
-			return incrementOpsIncludedByEntity(txn, c)
+			return incrementTxsIncludedByEntity(txn, c)
 		})
 	}
 }

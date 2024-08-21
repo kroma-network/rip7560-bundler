@@ -9,7 +9,7 @@ import (
 	"github.com/stackup-wallet/stackup-bundler/pkg/modules"
 )
 
-// FilterUnderpriced returns a BatchHandlerFunc that will filter out all the userOps that are below either the
+// FilterUnderpriced returns a BatchHandlerFunc that will filter out all the Rip7560Txs that are below either the
 // dynamic or legacy GasPrice set in the context.
 func FilterUnderpriced() modules.BatchHandlerFunc {
 	return func(ctx *modules.BatchHandlerCtx) error {

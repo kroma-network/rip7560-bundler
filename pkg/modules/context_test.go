@@ -31,7 +31,7 @@ func TestNoPendingTxs(t *testing.T) {
 	} else if pfo := ctx.GetPendingFactoryTxs(); len(pfo) != 0 {
 		t.Fatalf("pending deployer txs: want 0, got %d", len(pfo))
 	} else if ppo := ctx.GetPendingPaymasterTxs(); len(ppo) != 0 {
-		t.Fatalf("pending paymaster ops: want 0, got %d", len(ppo))
+		t.Fatalf("pending paymaster txs: want 0, got %d", len(ppo))
 	}
 }
 
@@ -68,9 +68,9 @@ func TestGetPendingSenderTxs(t *testing.T) {
 		t.Fatalf("got length %d, want %d", len(penTxs), len(expectedPenTxs))
 	}
 
-	for i, penOp := range penTxs {
-		if !testutils.IsTxsEqual(penOp, expectedPenTxs[i]) {
-			t.Fatalf("ops not equal: %s", testutils.GetTxsDiff(penOp, expectedPenTxs[i]))
+	for i, penTx := range penTxs {
+		if !testutils.IsTxsEqual(penTx, expectedPenTxs[i]) {
+			t.Fatalf("txs not equal: %s", testutils.GetTxsDiff(penTx, expectedPenTxs[i]))
 		}
 	}
 }
@@ -115,7 +115,7 @@ func TestGetPendingFactoryTxs(t *testing.T) {
 
 	for i, penTx := range penTxs {
 		if !testutils.IsTxsEqual(penTx, expectedPenTxs[i]) {
-			t.Fatalf("ops not equal: %s", testutils.GetTxsDiff(penTx, expectedPenTxs[i]))
+			t.Fatalf("txsS not equal: %s", testutils.GetTxsDiff(penTx, expectedPenTxs[i]))
 		}
 	}
 }

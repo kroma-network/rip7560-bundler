@@ -10,11 +10,11 @@ import (
 
 // TestMFLessThanBF calls checks.ValidateFeePerGas with a MaxFeePerGas < base fee. Expect error.
 func TestMFLessThanBF(t *testing.T) {
-	op := testutils.MockValidInitRip7560Tx()
+	tx := testutils.MockValidInitRip7560Tx()
 	gbf := testutils.GetMockBaseFeeFunc(common.Big2)
-	*op.MaxFeePerGas = hexutil.Big(*common.Big1)
-	*op.MaxPriorityFeePerGas = hexutil.Big(*common.Big0)
-	err := ValidateFeePerGas(op, gbf)
+	*tx.MaxFeePerGas = hexutil.Big(*common.Big1)
+	*tx.MaxPriorityFeePerGas = hexutil.Big(*common.Big0)
+	err := ValidateFeePerGas(tx, gbf)
 
 	if err == nil {
 		t.Fatal("got nil, want err")
@@ -23,11 +23,11 @@ func TestMFLessThanBF(t *testing.T) {
 
 // TestMFEqualBF calls checks.ValidateFeePerGas with a MaxFeePerGas == base fee. Expect nil.
 func TestMFEqualBF(t *testing.T) {
-	op := testutils.MockValidInitRip7560Tx()
+	tx := testutils.MockValidInitRip7560Tx()
 	gbf := testutils.GetMockBaseFeeFunc(common.Big1)
-	*op.MaxFeePerGas = hexutil.Big(*common.Big1)
-	*op.MaxPriorityFeePerGas = hexutil.Big(*common.Big0)
-	err := ValidateFeePerGas(op, gbf)
+	*tx.MaxFeePerGas = hexutil.Big(*common.Big1)
+	*tx.MaxPriorityFeePerGas = hexutil.Big(*common.Big0)
+	err := ValidateFeePerGas(tx, gbf)
 
 	if err != nil {
 		t.Fatalf("got %v, want nil", err)
@@ -36,11 +36,11 @@ func TestMFEqualBF(t *testing.T) {
 
 // TestMFMoreThanBF calls checks.ValidateFeePerGas with a MaxFeePerGas > base fee. Expect nil.
 func TestMFMoreThanBF(t *testing.T) {
-	op := testutils.MockValidInitRip7560Tx()
+	tx := testutils.MockValidInitRip7560Tx()
 	gbf := testutils.GetMockBaseFeeFunc(common.Big1)
-	*op.MaxFeePerGas = hexutil.Big(*common.Big2)
-	*op.MaxPriorityFeePerGas = hexutil.Big(*common.Big0)
-	err := ValidateFeePerGas(op, gbf)
+	*tx.MaxFeePerGas = hexutil.Big(*common.Big2)
+	*tx.MaxPriorityFeePerGas = hexutil.Big(*common.Big0)
+	err := ValidateFeePerGas(tx, gbf)
 
 	if err != nil {
 		t.Fatalf("got %v, want nil", err)
@@ -49,11 +49,11 @@ func TestMFMoreThanBF(t *testing.T) {
 
 // TestMPFMoreThanMF calls checks.ValidateFeePerGas with a MaxPriorityFeePerGas > MaxFeePerGas. Expect error.
 func TestMPFMoreThanMF(t *testing.T) {
-	op := testutils.MockValidInitRip7560Tx()
+	tx := testutils.MockValidInitRip7560Tx()
 	gbf := testutils.GetMockBaseFeeFunc(common.Big1)
-	*op.MaxFeePerGas = hexutil.Big(*common.Big2)
-	*op.MaxPriorityFeePerGas = hexutil.Big(*common.Big3)
-	err := ValidateFeePerGas(op, gbf)
+	*tx.MaxFeePerGas = hexutil.Big(*common.Big2)
+	*tx.MaxPriorityFeePerGas = hexutil.Big(*common.Big3)
+	err := ValidateFeePerGas(tx, gbf)
 
 	if err == nil {
 		t.Fatal("got nil, want err")
@@ -62,11 +62,11 @@ func TestMPFMoreThanMF(t *testing.T) {
 
 // TestMPFEqualMF calls checks.ValidateFeePerGas with a MaxPriorityFeePerGas == MaxFeePerGas. Expect nil.
 func TestMPFEqualMF(t *testing.T) {
-	op := testutils.MockValidInitRip7560Tx()
+	tx := testutils.MockValidInitRip7560Tx()
 	gbf := testutils.GetMockBaseFeeFunc(common.Big1)
-	*op.MaxFeePerGas = hexutil.Big(*common.Big2)
-	*op.MaxPriorityFeePerGas = hexutil.Big(*common.Big2)
-	err := ValidateFeePerGas(op, gbf)
+	*tx.MaxFeePerGas = hexutil.Big(*common.Big2)
+	*tx.MaxPriorityFeePerGas = hexutil.Big(*common.Big2)
+	err := ValidateFeePerGas(tx, gbf)
 
 	if err != nil {
 		t.Fatalf("got %v, want nil", err)
@@ -75,11 +75,11 @@ func TestMPFEqualMF(t *testing.T) {
 
 // TestMPFLessThanMF calls checks.ValidateFeePerGas with a MaxPriorityFeePerGas < MaxFeePerGas. Expect nil.
 func TestMPFLessThanMF(t *testing.T) {
-	op := testutils.MockValidInitRip7560Tx()
+	tx := testutils.MockValidInitRip7560Tx()
 	gbf := testutils.GetMockBaseFeeFunc(common.Big1)
-	*op.MaxFeePerGas = hexutil.Big(*common.Big2)
-	*op.MaxPriorityFeePerGas = hexutil.Big(*common.Big1)
-	err := ValidateFeePerGas(op, gbf)
+	*tx.MaxFeePerGas = hexutil.Big(*common.Big2)
+	*tx.MaxPriorityFeePerGas = hexutil.Big(*common.Big1)
+	err := ValidateFeePerGas(tx, gbf)
 
 	if err != nil {
 		t.Fatalf("got %v, want nil", err)

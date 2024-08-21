@@ -22,26 +22,26 @@ const (
 
 var (
 	emaHours       = 24
-	opsCountPrefix = dbutils.JoinValues("entity", "opsCount")
+	txsCountPrefix = dbutils.JoinValues("entity", "txsCount")
 )
 
-func getOpsCountKey(entity common.Address) []byte {
-	return []byte(dbutils.JoinValues(opsCountPrefix, entity.String()))
+func getTxsCountKey(entity common.Address) []byte {
+	return []byte(dbutils.JoinValues(txsCountPrefix, entity.String()))
 }
 
-func getOpsCountValue(opsSeen int, opsIncluded int) []byte {
+func getTxsCountValue(txsSeen int, txsIncluded int) []byte {
 	return []byte(
-		dbutils.JoinValues(strconv.Itoa(opsSeen), strconv.Itoa(opsIncluded), fmt.Sprint(time.Now().Unix())),
+		dbutils.JoinValues(strconv.Itoa(txsSeen), strconv.Itoa(txsIncluded), fmt.Sprint(time.Now().Unix())),
 	)
 }
 
-func applyExpWeights(txn *badger.Txn, key []byte, value []byte) (opsSeen int, opsIncluded int, err error) {
+func applyExpWeights(txn *badger.Txn, key []byte, value []byte) (txsSeen int, txsIncluded int, err error) {
 	counts := dbutils.SplitValues(string(value))
-	opsSeen, err = strconv.Atoi(counts[0])
+	txsSeen, err = strconv.Atoi(counts[0])
 	if err != nil {
 		return 0, 0, err
 	}
-	opsIncluded, err = strconv.Atoi(counts[1])
+	txsIncluded, err = strconv.Atoi(counts[1])
 	if err != nil {
 		return 0, 0, err
 	}
@@ -52,25 +52,25 @@ func applyExpWeights(txn *badger.Txn, key []byte, value []byte) (opsSeen int, op
 
 	dur := time.Since(time.Unix(lastUpdated, 0))
 	for i := int(dur.Hours()); i > 0; i-- {
-		if opsSeen < 24 && opsIncluded < 24 {
+		if txsSeen < 24 && txsIncluded < 24 {
 			break
 		}
 
-		opsSeen -= opsSeen / emaHours
-		opsIncluded -= opsIncluded / emaHours
+		txsSeen -= txsSeen / emaHours
+		txsIncluded -= txsIncluded / emaHours
 	}
 
-	e := badger.NewEntry(key, getOpsCountValue(opsSeen, opsIncluded))
+	e := badger.NewEntry(key, getTxsCountValue(txsSeen, txsIncluded))
 	err = txn.SetEntry(e)
 
-	return opsSeen, opsIncluded, err
+	return txsSeen, txsIncluded, err
 }
 
-func getOpsCountByEntity(
+func getTxsCountByEntity(
 	txn *badger.Txn,
 	entity common.Address,
-) (opsSeen int, opsIncluded int, err error) {
-	key := getOpsCountKey(entity)
+) (txsSeen int, txsIncluded int, err error) {
+	key := getTxsCountKey(entity)
 	item, err := txn.Get(key)
 	if err != nil && err == badger.ErrKeyNotFound {
 		return 0, 0, nil
@@ -90,26 +90,26 @@ func getOpsCountByEntity(
 	return applyExpWeights(txn, key, value)
 }
 
-func incrementOpsSeenByEntity(txn *badger.Txn, entity common.Address) error {
-	opsSeen, opsIncluded, err := getOpsCountByEntity(txn, entity)
+func incrementTxsSeenByEntity(txn *badger.Txn, entity common.Address) error {
+	txsSeen, txsIncluded, err := getTxsCountByEntity(txn, entity)
 	if err != nil {
 		return err
 	}
 
-	e := badger.NewEntry(getOpsCountKey(entity), getOpsCountValue(opsSeen+1, opsIncluded))
+	e := badger.NewEntry(getTxsCountKey(entity), getTxsCountValue(txsSeen+1, txsIncluded))
 	return txn.SetEntry(e)
 }
 
-func incrementOpsIncludedByEntity(txn *badger.Txn, count addressCounter) error {
+func incrementTxsIncludedByEntity(txn *badger.Txn, count addressCounter) error {
 	for entity, n := range count {
-		opsSeen, opsIncluded, err := getOpsCountByEntity(txn, entity)
+		txsSeen, txsIncluded, err := getTxsCountByEntity(txn, entity)
 		if err != nil {
 			return err
 		}
 
 		e := badger.NewEntry(
-			getOpsCountKey(entity),
-			getOpsCountValue(opsSeen, opsIncluded+n),
+			getTxsCountKey(entity),
+			getTxsCountValue(txsSeen, txsIncluded+n),
 		)
 		if err := txn.SetEntry(e); err != nil {
 			return err
@@ -120,18 +120,18 @@ func incrementOpsIncludedByEntity(txn *badger.Txn, count addressCounter) error {
 }
 
 func getStatus(txn *badger.Txn, entity common.Address, repConst *ReputationConstants) (status, error) {
-	opsSeen, opsIncluded, err := getOpsCountByEntity(txn, entity)
+	txsSeen, txsIncluded, err := getTxsCountByEntity(txn, entity)
 	if err != nil {
 		return ok, err
 	}
-	if opsSeen == 0 {
+	if txsSeen == 0 {
 		return ok, nil
 	}
 
-	minExpectedIncluded := opsSeen / repConst.MinInclusionRateDenominator
-	if minExpectedIncluded <= opsIncluded+repConst.ThrottlingSlack {
+	minExpectedIncluded := txsSeen / repConst.MinInclusionRateDenominator
+	if minExpectedIncluded <= txsIncluded+repConst.ThrottlingSlack {
 		return ok, nil
-	} else if minExpectedIncluded <= opsIncluded+repConst.BanSlack {
+	} else if minExpectedIncluded <= txsIncluded+repConst.BanSlack {
 		return throttled, nil
 	} else {
 		return banned, nil
@@ -140,6 +140,6 @@ func getStatus(txn *badger.Txn, entity common.Address, repConst *ReputationConst
 
 func overrideEntity(txn *badger.Txn, entry *ReputationOverride) error {
 	return txn.SetEntry(
-		badger.NewEntry(getOpsCountKey(entry.Address), getOpsCountValue(entry.OpsSeen, entry.OpsIncluded)),
+		badger.NewEntry(getTxsCountKey(entry.Address), getTxsCountValue(entry.TxsSeen, entry.TxsIncluded)),
 	)
 }

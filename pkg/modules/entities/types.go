@@ -6,8 +6,8 @@ import (
 
 type ReputationOverride struct {
 	Address     common.Address `json:"address"`
-	OpsSeen     int            `json:"opsSeen"`
-	OpsIncluded int            `json:"opsIncluded"`
+	TxsSeen     int            `json:"txsSeen"`
+	TxsIncluded int            `json:"txsIncluded"`
 }
 
 // ReputationConstants are a collection of values for determining the appropriate status of a UserOperation

@@ -88,10 +88,10 @@ func Rip7560Mode() {
 	c.UseLogger(logr)
 	c.UseModules(
 		rep.CheckStatus(),
-		rep.ValidateOpLimit(),
+		rep.ValidateTxLimit(),
 		check.ValidateTxValues(),
 		check.SimulateTx(),
-		rep.IncOpsSeen(),
+		rep.IncTxsSeen(),
 	)
 
 	// Init Bundler
@@ -109,7 +109,7 @@ func Rip7560Mode() {
 		gasprice.FilterUnderpriced(),
 		batch.SortByNonce(),
 		check.CodeHashes(),
-		rep.IncOpsIncluded(),
+		rep.IncTxsIncluded(),
 		check.Clean(),
 	)
 
