@@ -24,8 +24,7 @@ type Values struct {
 	ReputationConstants *entities.ReputationConstants
 
 	// Searcher mode variables.
-	EthBuilderUrls    []string
-	BlocksInTheFuture int
+	EthBuilderUrls []string
 
 	// Undocumented variables.
 	DebugMode bool
@@ -76,7 +75,6 @@ func GetValues() *Values {
 	// TODO : adjust args from geth request, deprecate this!
 	viper.SetDefault("rip7560_bundler_max_batch_gas_limit", 18000000)
 	viper.SetDefault("rip7560_bundler_max_tx_ttl_seconds", 180)
-	viper.SetDefault("rip7560_bundler_blocks_in_the_future", 6) // TODO!
 	viper.SetDefault("rip7560_bundler_debug_mode", false)
 	viper.SetDefault("rip7560_bundler_gin_mode", gin.ReleaseMode)
 
@@ -103,7 +101,6 @@ func GetValues() *Values {
 	_ = viper.BindEnv("rip7560_bundler_max_batch_gas_limit")
 	_ = viper.BindEnv("rip7560_bundler_max_tx_ttl_seconds")
 	_ = viper.BindEnv("rip7560_bundler_eth_builder_urls")
-	_ = viper.BindEnv("rip7560_bundler_blocks_in_the_future")
 	_ = viper.BindEnv("rip7560_bundler_debug_mode")
 	_ = viper.BindEnv("rip7560_bundler_gin_mode")
 
@@ -132,7 +129,6 @@ func GetValues() *Values {
 	maxBatchGasLimit := big.NewInt(int64(viper.GetInt("rip7560_bundler_max_batch_gas_limit")))
 	maxTxTTL := time.Second * viper.GetDuration("rip7560_bundler_max_tx_ttl_seconds")
 	ethBuilderUrls := envArrayToStringSlice(viper.GetString("rip7560_bundler_eth_builder_urls"))
-	blocksInTheFuture := viper.GetInt("rip7560_bundler_blocks_in_the_future")
 	debugMode := viper.GetBool("rip7560_bundler_debug_mode")
 	ginMode := viper.GetString("rip7560_bundler_gin_mode")
 	return &Values{
@@ -145,7 +141,6 @@ func GetValues() *Values {
 		MaxTxTTL:            maxTxTTL,
 		ReputationConstants: NewReputationConstantsFromEnv(),
 		EthBuilderUrls:      ethBuilderUrls,
-		BlocksInTheFuture:   blocksInTheFuture,
 		DebugMode:           debugMode,
 		GinMode:             ginMode,
 	}
