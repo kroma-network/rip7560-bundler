@@ -26,7 +26,6 @@ type Client struct {
 	getRip7560TxReceipt GetRip7560TxReceiptFunc
 	getGasPrices        GetGasPricesFunc
 	getGasEstimate      GetGasEstimateFunc
-	txLookupLimit       uint64
 }
 
 // New initializes a new RIP-7560 client which can be extended with modules for validating Transactions
@@ -34,7 +33,6 @@ type Client struct {
 func New(
 	mempool *mempool.Mempool,
 	chainID *big.Int,
-	txLookupLimit uint64,
 ) *Client {
 	return &Client{
 		mempool:             mempool,
@@ -44,7 +42,6 @@ func New(
 		getRip7560TxReceipt: getRip7560TxReceiptNotx(),
 		getGasPrices:        getGasPricesNotx(),
 		getGasEstimate:      getGasEstimateNoop(),
-		txLookupLimit:       txLookupLimit,
 	}
 }
 
@@ -169,7 +166,7 @@ func (i *Client) GetRip7560TransactionReceipt(
 	// Init logger
 	l := i.logger.WithName("eth_getRip7560TransactionReceipt").WithValues("rip7560transaction")
 
-	receipt, err := i.getRip7560TxReceipt(txArgs.ToTransaction().Hash().String(), i.txLookupLimit)
+	receipt, err := i.getRip7560TxReceipt(txArgs.ToTransaction().Hash().String())
 	if err != nil {
 		l.Error(err, "getRip7560TransactionReceipt error")
 	}

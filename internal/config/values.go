@@ -20,8 +20,7 @@ type Values struct {
 	DataDirectory       string
 	MaxVerificationGas  *big.Int
 	MaxBatchGasLimit    *big.Int
-	MaxOpTTL            time.Duration
-	OpLookupLimit       uint64
+	MaxTxTTL            time.Duration
 	ReputationConstants *entities.ReputationConstants
 
 	// Searcher mode variables.
@@ -76,9 +75,8 @@ func GetValues() *Values {
 	viper.SetDefault("rip7560_bundler_max_verification_gas", 6000000)
 	// TODO : adjust args from geth request, deprecate this!
 	viper.SetDefault("rip7560_bundler_max_batch_gas_limit", 18000000)
-	viper.SetDefault("rip7560_bundler_max_op_ttl_seconds", 180)
-	viper.SetDefault("rip7560_bundler_op_lookup_limit", 2000)
-	viper.SetDefault("rip7560_bundler_blocks_in_the_future", 6)
+	viper.SetDefault("rip7560_bundler_max_tx_ttl_seconds", 180)
+	viper.SetDefault("rip7560_bundler_blocks_in_the_future", 6) // TODO!
 	viper.SetDefault("rip7560_bundler_debug_mode", false)
 	viper.SetDefault("rip7560_bundler_gin_mode", gin.ReleaseMode)
 
@@ -103,8 +101,7 @@ func GetValues() *Values {
 	_ = viper.BindEnv("rip7560_bundler_supported_entry_points")
 	_ = viper.BindEnv("rip7560_bundler_max_verification_gas")
 	_ = viper.BindEnv("rip7560_bundler_max_batch_gas_limit")
-	_ = viper.BindEnv("rip7560_bundler_max_op_ttl_seconds")
-	_ = viper.BindEnv("rip7560_bundler_op_lookup_limit")
+	_ = viper.BindEnv("rip7560_bundler_max_tx_ttl_seconds")
 	_ = viper.BindEnv("rip7560_bundler_eth_builder_urls")
 	_ = viper.BindEnv("rip7560_bundler_blocks_in_the_future")
 	_ = viper.BindEnv("rip7560_bundler_debug_mode")
@@ -133,8 +130,7 @@ func GetValues() *Values {
 	dataDirectory := viper.GetString("rip7560_bundler_data_directory")
 	maxVerificationGas := big.NewInt(int64(viper.GetInt("rip7560_bundler_max_verification_gas")))
 	maxBatchGasLimit := big.NewInt(int64(viper.GetInt("rip7560_bundler_max_batch_gas_limit")))
-	maxOpTTL := time.Second * viper.GetDuration("rip7560_bundler_max_op_ttl_seconds")
-	opLookupLimit := viper.GetUint64("rip7560_bundler_op_lookup_limit")
+	maxTxTTL := time.Second * viper.GetDuration("rip7560_bundler_max_tx_ttl_seconds")
 	ethBuilderUrls := envArrayToStringSlice(viper.GetString("rip7560_bundler_eth_builder_urls"))
 	blocksInTheFuture := viper.GetInt("rip7560_bundler_blocks_in_the_future")
 	debugMode := viper.GetBool("rip7560_bundler_debug_mode")
@@ -146,8 +142,7 @@ func GetValues() *Values {
 		DataDirectory:       dataDirectory,
 		MaxVerificationGas:  maxVerificationGas,
 		MaxBatchGasLimit:    maxBatchGasLimit,
-		MaxOpTTL:            maxOpTTL,
-		OpLookupLimit:       opLookupLimit,
+		MaxTxTTL:            maxTxTTL,
 		ReputationConstants: NewReputationConstantsFromEnv(),
 		EthBuilderUrls:      ethBuilderUrls,
 		BlocksInTheFuture:   blocksInTheFuture,
