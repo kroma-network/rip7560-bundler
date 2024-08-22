@@ -1,5 +1,5 @@
 // Package entities implements modules for reputation scoring and throttling/banning of entities as specified
-// in EIP-4337.
+// in RIP-7560.
 package entities
 
 import (
@@ -14,7 +14,7 @@ import (
 )
 
 // Reputation provides Client and Bundler modules to track the reputation of every entity seen in a
-// Rip-7560 transactions.
+// RIP-7560 transactions.
 type Reputation struct {
 	db       *badger.DB
 	eth      *ethclient.Client

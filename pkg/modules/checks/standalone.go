@@ -61,7 +61,8 @@ func (s *Standalone) ValidateTxValues() modules.Rip7560TxHandlerFunc {
 		g.Go(func() error { return ValidateSender(ctx.Tx, gc) })
 		g.Go(func() error { return ValidatePaymasterAndData(ctx.Tx, gc) })
 		g.Go(func() error { return ValidateFeePerGas(ctx.Tx, gasprice.GetBaseFeeWithEthClient(s.eth)) })
-		g.Go(func() error { return ValidatePendingTxs(ctx.Tx, ctx.GetPendingSenderTxs()) })
+		// TODO : Uncommenting after modifications related to 2d nonce manager
+		//g.Go(func() error { return ValidatePendingTxs(ctx.Tx, ctx.GetPendingSenderTxs()) })
 
 		if err := g.Wait(); err != nil {
 			return errors.NewRPCError(errors.INVALID_FIELDS, err.Error(), err.Error())

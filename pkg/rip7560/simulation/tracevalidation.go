@@ -120,14 +120,7 @@ func TraceSimulateValidation(in *TraceInput) (*TraceOutput, error) {
 			if len(out.Context) != 0 {
 				return nil, errors.New("unstaked paymaster must not return context")
 			}
-			// TODO : is this needed?
-		} else if call.To == config.EntryPointAddress && call.Method == methods.BalanceOfSelector {
-			return nil, fmt.Errorf(
-				"%s cannot call balanceOf on EntryPoint",
-				addr2KnownEntity(in.Tx, call.From),
-			)
-			// TODO : is this needed?
-		} else if call.To != config.EntryPointAddress && call.Value.Cmp(common.Big0) == 1 {
+		} else if call.Value.Cmp(common.Big0) == 1 {
 			return nil, fmt.Errorf(
 				"%s has a forbidden value transfer to %s",
 				addr2KnownEntity(in.Tx, call.From),

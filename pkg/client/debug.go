@@ -69,24 +69,6 @@ func (d *Debug) DumpMempool() ([]*transaction.TransactionArgs, error) {
 	//return res, nil
 }
 
-// SendBundleNow forces the bundler to build and execute a bundle from the mempool as handleTxsS() transaction.
-// TODO : need update
-//func (d *Debug) SendBundleNow() (string, error) {
-//	ctx, err := d.bundler.Process(d.entrypoint)
-//	if err != nil {
-//		return "", err
-//	}
-//	if ctx == nil {
-//		return "", nil
-//	}
-//
-//	hash, ok := ctx.Data["txn_hash"].(string)
-//	if !ok {
-//		return "", errors.New("txn_hash not in ctx Data")
-//	}
-//	return hash, nil
-//}
-
 // SetReputation allows the bundler to set the reputation of given addresses.
 func (d *Debug) SetReputation(entries []any, ep string) (string, error) {
 	roArr := []*entities.ReputationOverride{}
