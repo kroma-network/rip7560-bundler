@@ -14,9 +14,9 @@ var (
 	keyPrefix = dbutils.JoinValues("mempool")
 )
 
-func getUniqueKey(sender common.Address, bigNonce *hexutil.Big) []byte {
+func getUniqueKey(sender common.Address, nonce *hexutil.Uint64, bigNonce *hexutil.Big) []byte {
 	return []byte(
-		dbutils.JoinValues(keyPrefix, sender.String(), bigNonce.String()),
+		dbutils.JoinValues(keyPrefix, sender.String(), nonce.String(), bigNonce.String()),
 	)
 }
 
