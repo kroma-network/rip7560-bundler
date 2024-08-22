@@ -70,12 +70,12 @@ func Rip7560Mode() {
 		conf.ReputationConstants,
 	)
 
-	exp := expire.New(conf.MaxOpTTL)
+	exp := expire.New(conf.MaxTxTTL)
 
 	rep := entities.New(db, eth, conf.ReputationConstants)
 
 	// Init Client
-	c := client.New(mem, chain, conf.OpLookupLimit)
+	c := client.New(mem, chain)
 	c.SetGetRip7560TransactionReceiptFunc(client.GetRip7560TransactionReceiptWithEthClient(eth))
 	c.SetGetGasPricesFunc(client.GetGasPricesWithEthClient(eth))
 	c.SetGetGasEstimateFunc(

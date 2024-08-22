@@ -17,10 +17,10 @@ import (
 
 // GetRip7560TxReceiptFunc is a general interface for fetching a Rip-7560 transaction Receipt given a txHash,
 // EntryPoint address, and block range.
-type GetRip7560TxReceiptFunc = func(txHash string, blkRange uint64) (*types.Receipt, error)
+type GetRip7560TxReceiptFunc = func(txHash string) (*types.Receipt, error)
 
 func getRip7560TxReceiptNotx() GetRip7560TxReceiptFunc {
-	return func(txHash string, blkRange uint64) (*types.Receipt, error) {
+	return func(txHash string) (*types.Receipt, error) {
 		return nil, nil
 	}
 }
@@ -28,8 +28,8 @@ func getRip7560TxReceiptNotx() GetRip7560TxReceiptFunc {
 // GetRip7560TransactionReceiptWithEthClient returns an implementation of GetRip7560UserTxReceiptFunc that relies on an eth
 // client to fetch a Rip-7560 transactionReceipt.
 func GetRip7560TransactionReceiptWithEthClient(eth *ethclient.Client) GetRip7560TxReceiptFunc {
-	return func(txHash string, blkRange uint64) (*types.Receipt, error) {
-		return filter.GetRip7560TransactionReceipt(eth, txHash, blkRange)
+	return func(txHash string) (*types.Receipt, error) {
+		return filter.GetRip7560TransactionReceipt(eth, txHash)
 	}
 }
 
