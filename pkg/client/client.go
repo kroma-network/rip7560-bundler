@@ -159,6 +159,19 @@ func (i *Client) EstimateRip7560TransactionGas(
 	}, nil
 }
 
+func (i *Client) GetTransactionReceipt(hash string) (*types.Receipt, error) {
+	// Init logger
+	l := i.logger.WithName("eth_getTransactionReceipt").WithValues("rip7560transaction")
+
+	receipt, err := i.getRip7560TxReceipt(hash)
+	if err != nil {
+		l.Error(err, "getTransactionReceipt error")
+	}
+
+	l.Info("eth_getTransactionReceipt ok")
+	return receipt, nil
+}
+
 // GetRip7560TransactionReceipt returns RIP-7560 transaction receipt based on a tx hash
 func (i *Client) GetRip7560TransactionReceipt(
 	txArgs *transaction.TransactionArgs,

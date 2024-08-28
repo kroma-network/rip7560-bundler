@@ -3,6 +3,7 @@ package client
 import (
 	"encoding/json"
 	"errors"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/stackup-wallet/stackup-bundler/pkg/bundler"
 	"github.com/stackup-wallet/stackup-bundler/pkg/gas"
@@ -24,8 +25,8 @@ func NewRpcAdapter(client *Client, bundler *bundler.Bundler, debug *Debug) *RpcA
 	return &RpcAdapter{client, bundler, debug}
 }
 
-// Eth_sendRip7560Transaction routes method calls to *Client.SendRip7560Transaction.
-func (r *RpcAdapter) Eth_sendRip7560Transaction(input map[string]interface{}) (string, error) {
+// Eth_sendTransaction routes method calls to *Client.SendRip7560Transaction.
+func (r *RpcAdapter) Eth_sendTransaction(input map[string]interface{}) (string, error) {
 	txArgs, err := transaction.New(input)
 	if err != nil {
 		return "", err
@@ -33,8 +34,8 @@ func (r *RpcAdapter) Eth_sendRip7560Transaction(input map[string]interface{}) (s
 	return r.client.SendRip7560Transaction(txArgs)
 }
 
-// Eth_estimateRip7560TransactionGas routes method calls to *Client.EstimateRip7560TransactionGas.
-func (r *RpcAdapter) Eth_estimateRip7560TransactionGas(
+// Eth_estimateGas routes method calls to *Client.EstimateRip7560TransactionGas.
+func (r *RpcAdapter) Eth_estimateGas(
 	input map[string]interface{},
 	os optional_stateOverride,
 ) (*gas.GasEstimates, error) {
@@ -45,15 +46,25 @@ func (r *RpcAdapter) Eth_estimateRip7560TransactionGas(
 	return r.client.EstimateRip7560TransactionGas(txArgs, os)
 }
 
-// Eth_getRip7560TransactionReceipt routes method calls to *Client.GetRip7560TransactionReceipt.
-func (r *RpcAdapter) Eth_getRip7560TransactionReceipt(
+// Eth_getTransactionHash
+func (r *RpcAdapter) Eth_getTransactionHash(
 	input map[string]interface{},
-) (*types.Receipt, error) {
-	txArgs, err := transaction.New(input)
+) (common.Hash, error) {
+	jsonData, err := json.Marshal(input)
 	if err != nil {
-		return nil, err
+		return common.Hash{}, err
 	}
-	return r.client.GetRip7560TransactionReceipt(txArgs)
+
+	var args transaction.TransactionArgs
+	if err := json.Unmarshal(jsonData, &args); err != nil {
+		return common.Hash{}, err
+	}
+	return args.ToTransaction().Hash(), nil
+}
+
+// Eth_getTransactionReceipt routes method calls to *Client.GetRip7560TransactionReceipt.
+func (r *RpcAdapter) Eth_getTransactionReceipt(hash string) (*types.Receipt, error) {
+	return r.client.GetTransactionReceipt(hash)
 }
 
 // Eth_chainId routes method calls to *Client.ChainID.
