@@ -21,7 +21,7 @@ func (q *rip7560TxQueues) getEntitiesSortedSet(entity common.Address) *sortedset
 
 func (q *rip7560TxQueues) AddTx(tx *transaction.TransactionArgs) {
 	rip7560Tx := tx.ToTransaction().Rip7560TransactionData()
-	key := string(getUniqueKey(tx.GetSender(), tx.Nonce, tx.BigNonce))
+	key := string(getUniqueKey(tx.GetSender(), tx.Nonce, tx.NonceKey))
 
 	q.all.AddOrUpdate(key, sortedset.SCORE(q.all.GetCount()), tx)
 	// TODO : Need to consider both bignonce and nonce
@@ -60,7 +60,7 @@ func (q *rip7560TxQueues) All() []*transaction.TransactionArgs {
 func (q *rip7560TxQueues) RemoveTxs(txArgsList ...*transaction.TransactionArgs) {
 
 	for _, txArgs := range txArgsList {
-		key := string(getUniqueKey(txArgs.GetSender(), txArgs.Nonce, txArgs.BigNonce))
+		key := string(getUniqueKey(txArgs.GetSender(), txArgs.Nonce, txArgs.NonceKey))
 		q.all.Remove(key)
 		q.getEntitiesSortedSet(txArgs.GetSender()).Remove(key)
 		q.getEntitiesSortedSet(txArgs.GetDeployer()).Remove(key)
