@@ -11,7 +11,7 @@ func GetRip7560TransactionReceipt(
 	eth *ethclient.Client,
 	txHash string) (*types.Receipt, error) {
 
-	hash := common.BytesToHash([]byte(txHash))
+	hash := common.HexToHash(txHash)
 	receipt, err := eth.TransactionReceipt(context.Background(), hash)
 	if err != nil {
 		return nil, err

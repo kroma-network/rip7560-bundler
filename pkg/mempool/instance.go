@@ -48,7 +48,7 @@ func (m *Mempool) AddTx(tx *transaction.TransactionArgs) error {
 		return fmt.Errorf("failed to RLP encode transaction: %v", err)
 	}
 	err = m.db.Update(func(txn *badger.Txn) error {
-		return txn.Set(getUniqueKey(tx.GetSender(), tx.Nonce, tx.BigNonce), buf.Bytes())
+		return txn.Set(getUniqueKey(tx.GetSender(), tx.Nonce, tx.NonceKey), buf.Bytes())
 	})
 	if err != nil {
 		return err
@@ -62,7 +62,7 @@ func (m *Mempool) AddTx(tx *transaction.TransactionArgs) error {
 func (m *Mempool) RemoveTxs(txs ...*transaction.TransactionArgs) error {
 	err := m.db.Update(func(txn *badger.Txn) error {
 		for _, tx := range txs {
-			err := txn.Delete(getUniqueKey(tx.GetSender(), tx.Nonce, tx.BigNonce))
+			err := txn.Delete(getUniqueKey(tx.GetSender(), tx.Nonce, tx.NonceKey))
 			if err != nil {
 				return err
 			}
