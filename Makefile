@@ -17,5 +17,8 @@ dev-private-mode:
 dev-searcher-mode:
 	air -c .air.searcher-mode.toml
 
+dev-7560-mode:
+	air -c .air.7560-mode.toml
+
 dev-reset-default-data-dir:
 	rm -rf /tmp/stackup_bundler
