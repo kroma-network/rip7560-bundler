@@ -15,6 +15,10 @@ var (
 )
 
 func getUniqueKey(sender common.Address, nonce *hexutil.Uint64, bigNonce *hexutil.Big) []byte {
+	if bigNonce == nil {
+		bigNonce = new(hexutil.Big)
+		bigNonce.ToInt().SetInt64(-1)
+	}
 	return []byte(
 		dbutils.JoinValues(keyPrefix, sender.String(), nonce.String(), bigNonce.String()),
 	)
