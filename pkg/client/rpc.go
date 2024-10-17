@@ -5,6 +5,7 @@ import (
 	"errors"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/log"
 	"github.com/stackup-wallet/stackup-bundler/pkg/bundler"
 	"github.com/stackup-wallet/stackup-bundler/pkg/gas"
 	"github.com/stackup-wallet/stackup-bundler/pkg/rip7560/transaction"
@@ -84,7 +85,9 @@ func (r *RpcAdapter) Aa_getRip7560Bundle(input map[string]interface{}) (*transac
 	}
 
 	ret, err := r.bundler.GetRip7560Bundle(args)
-
+	if ret != nil {
+		log.Debug("getBundleAPI", "ret", ret)
+	}
 	return ret, err
 }
 

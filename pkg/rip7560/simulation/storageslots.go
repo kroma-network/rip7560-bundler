@@ -1,7 +1,6 @@
 package simulation
 
 import (
-	"fmt"
 	"math/big"
 	"strings"
 
@@ -9,10 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/eth/tracers/native"
-	"github.com/stackup-wallet/stackup-bundler/internal/config"
 	"github.com/stackup-wallet/stackup-bundler/pkg/rip7560/transaction"
-	"github.com/stackup-wallet/stackup-bundler/pkg/tracer"
 )
 
 var (
@@ -57,11 +53,11 @@ type storageSlotsValidator struct {
 	SenderSlots storageSlots
 
 	// Parameters of the entity under validation
-	EntityName            string
-	EntityAddr            common.Address
-	EntityAccessMap       native.AccessMap
-	EntityContractSizeMap native.ContractSizeMap
-	EntitySlots           storageSlots
+	EntityName string
+	EntityAddr common.Address
+	//EntityAccessMap       native.AccessMap
+	//EntityContractSizeMap native.ContractSizeMap
+	EntitySlots storageSlots
 }
 
 func isAssociatedWith(entitySlots storageSlots, slot string) bool {
@@ -87,68 +83,68 @@ func (v *storageSlotsValidator) Process() error {
 		entitySlots = mapset.NewSet[string]()
 	}
 
-	for addr, access := range v.EntityAccessMap {
-		if addr == v.Tx.GetSender() || addr == config.EntryPointAddress {
-			continue
-		}
-
-		var mustStakeSlot string
-		accessTypes := map[string]any{
-			accessModeRead:  access.Reads,
-			accessModeWrite: access.Writes,
-		}
-		for mode, val := range accessTypes {
-			slots := []string{}
-			if readMap, ok := val.(tracer.HexMap); ok {
-				for slot := range readMap {
-					slots = append(slots, slot)
-				}
-			} else if writeMap, ok := val.(tracer.Counts); ok {
-				for slot := range writeMap {
-					slots = append(slots, slot)
-				}
-			} else {
-				return fmt.Errorf("cannot decode %s access type: %+v", mode, val)
-			}
-
-			// FIXME : remove or uncommnet
-			//for _, slot := range slots {
-			//	if isAssociatedWith(senderSlots, slot) {
-			//		if (len(v.Tx.GetDeployerData()) > 0) ||
-			//			(len(v.Tx.GetDeployerData()) > 0 && v.EntityAddr != v.Tx.GetSender()) {
-			//			mustStakeSlot = slot
-			//		} else {
-			//			continue
-			//		}
-			//	} else if amIds := v.AltMempools.HasInvalidStorageAccessException(
-			//		v.EntityName,
-			//		addr2KnownEntity(v.Tx, addr),
-			//		slot,
-			//	); (isAssociatedWith(entitySlots, slot) || mode == accessModeRead) && len(amIds) == 0 {
-			//		mustStakeSlot = slot
-			//	} else if len(amIds) > 0 {
-			//		altMempoolIds = append(altMempoolIds, amIds...)
-			//	} else {
-			//		return fmt.Errorf(
-			//			"%s has forbidden %s to %s slot %s",
-			//			v.EntityName,
-			//			mode,
-			//			addr2KnownEntity(v.Tx, addr),
-			//			slot,
-			//		)
-			//	}
-			//}
-		}
-
-		if mustStakeSlot != "" {
-			return fmt.Errorf(
-				"unstaked %s accessed %s slot %s",
-				v.EntityName,
-				addr2KnownEntity(v.Tx, addr),
-				mustStakeSlot,
-			)
-		}
-	}
+	//for addr, access := range v.EntityAccessMap {
+	//	if addr == v.Tx.GetSender() || addr == config.EntryPointAddress {
+	//		continue
+	//	}
+	//
+	//	var mustStakeSlot string
+	//	accessTypes := map[string]any{
+	//		accessModeRead:  access.Reads,
+	//		accessModeWrite: access.Writes,
+	//	}
+	//	for mode, val := range accessTypes {
+	//		slots := []string{}
+	//		if readMap, ok := val.(tracer.HexMap); ok {
+	//			for slot := range readMap {
+	//				slots = append(slots, slot)
+	//			}
+	//		} else if writeMap, ok := val.(tracer.Counts); ok {
+	//			for slot := range writeMap {
+	//				slots = append(slots, slot)
+	//			}
+	//		} else {
+	//			return fmt.Errorf("cannot decode %s access type: %+v", mode, val)
+	//		}
+	//
+	//		// FIXME : remove or uncommnet
+	//		//for _, slot := range slots {
+	//		//	if isAssociatedWith(senderSlots, slot) {
+	//		//		if (len(v.Tx.GetDeployerData()) > 0) ||
+	//		//			(len(v.Tx.GetDeployerData()) > 0 && v.EntityAddr != v.Tx.GetSender()) {
+	//		//			mustStakeSlot = slot
+	//		//		} else {
+	//		//			continue
+	//		//		}
+	//		//	} else if amIds := v.AltMempools.HasInvalidStorageAccessException(
+	//		//		v.EntityName,
+	//		//		addr2KnownEntity(v.Tx, addr),
+	//		//		slot,
+	//		//	); (isAssociatedWith(entitySlots, slot) || mode == accessModeRead) && len(amIds) == 0 {
+	//		//		mustStakeSlot = slot
+	//		//	} else if len(amIds) > 0 {
+	//		//		altMempoolIds = append(altMempoolIds, amIds...)
+	//		//	} else {
+	//		//		return fmt.Errorf(
+	//		//			"%s has forbidden %s to %s slot %s",
+	//		//			v.EntityName,
+	//		//			mode,
+	//		//			addr2KnownEntity(v.Tx, addr),
+	//		//			slot,
+	//		//		)
+	//		//	}
+	//		//}
+	//	}
+	//
+	//	if mustStakeSlot != "" {
+	//		return fmt.Errorf(
+	//			"unstaked %s accessed %s slot %s",
+	//			v.EntityName,
+	//			addr2KnownEntity(v.Tx, addr),
+	//			mustStakeSlot,
+	//		)
+	//	}
+	//}
 
 	return nil
 }

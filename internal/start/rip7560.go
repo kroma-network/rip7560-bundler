@@ -17,10 +17,8 @@ import (
 	"github.com/stackup-wallet/stackup-bundler/pkg/client"
 	"github.com/stackup-wallet/stackup-bundler/pkg/jsonrpc"
 	"github.com/stackup-wallet/stackup-bundler/pkg/mempool"
-	"github.com/stackup-wallet/stackup-bundler/pkg/modules/batch"
 	"github.com/stackup-wallet/stackup-bundler/pkg/modules/checks"
 	"github.com/stackup-wallet/stackup-bundler/pkg/modules/entities"
-	"github.com/stackup-wallet/stackup-bundler/pkg/modules/expire"
 	"github.com/stackup-wallet/stackup-bundler/pkg/modules/gasprice"
 	"github.com/stackup-wallet/stackup-bundler/pkg/signer"
 	"go.opentelemetry.io/otel"
@@ -70,7 +68,7 @@ func Rip7560Mode() {
 		conf.ReputationConstants,
 	)
 
-	exp := expire.New(conf.MaxTxTTL)
+	//exp := expire.New(conf.MaxTxTTL)
 
 	rep := entities.New(db, eth, conf.ReputationConstants)
 
@@ -90,7 +88,7 @@ func Rip7560Mode() {
 		rep.CheckStatus(),
 		rep.ValidateTxLimit(),
 		check.ValidateTxValues(),
-		check.SimulateTx(),
+		//check.SimulateTx(),
 		rep.IncTxsSeen(),
 	)
 
@@ -104,12 +102,12 @@ func Rip7560Mode() {
 		log.Fatal(err)
 	}
 	b.UseModules(
-		exp.DropExpired(),
+		//exp.DropExpired(),
 		gasprice.SortByGasPrice(),
 		gasprice.FilterUnderpriced(),
-		batch.SortByNonce(),
-		check.CodeHashes(),
-		rep.IncTxsIncluded(),
+		//batch.SortByNonce(),
+		//check.CodeHashes(),
+		//rep.IncTxsIncluded(),
 		check.Clean(),
 	)
 
